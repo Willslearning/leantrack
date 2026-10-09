@@ -18,6 +18,10 @@ function load() {
     favorites: [], // saved foods (any source) for one-tap re-adding without searching/scanning again
     reminders: {
       walk: { label: 'Time for your walk', enabled: false, time: '08:00', days: [1, 2, 3, 4, 5], lastFired: null },
+      water: { label: 'Drink water', enabled: false, time: '10:00', days: [0, 1, 2, 3, 4, 5, 6], lastFired: null },
+      breakfast: { label: 'Breakfast time', enabled: false, time: '08:00', days: [0, 1, 2, 3, 4, 5, 6], lastFired: null },
+      lunch: { label: 'Lunch time', enabled: false, time: '12:30', days: [0, 1, 2, 3, 4, 5, 6], lastFired: null },
+      dinner: { label: 'Dinner time', enabled: false, time: '18:30', days: [0, 1, 2, 3, 4, 5, 6], lastFired: null },
       logMeals: { label: 'Log today’s meals', enabled: false, time: '20:00', days: [0, 1, 2, 3, 4, 5, 6], lastFired: null },
       weighIn: { label: 'Weigh-in day', enabled: false, time: '07:30', days: [1], lastFired: null },
     },
@@ -687,7 +691,40 @@ function renderReminders() {
         <input type="time" data-rfield="time" value="${r.time}">
       </div>
       <div class="day-toggle">${DAY_LETTERS.map((d, i) => `<button type="button" data-rday="${i}" class="${r.days.includes(i) ? 'on' : ''}">${d}</button>`).join('')}</div>
+      <button type="button" class="ical-btn" data-rical="${key}">Add to Calendar</button>
     </div>`).join('');
+}
+// Downloads a recurring .ics calendar event for a reminder — your phone's own Calendar app handles
+// the actual alert from there, which is far more reliable than a browser notification (works even
+// with LeanTrack fully closed). Times are written "floating" (no timezone/UTC marker), which every
+// calendar app treats as "whatever timezone I'm currently in" — right for a daily personal reminder.
+const ICS_DAY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+function icsStamp(d) {
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}T${p(d.getHours())}${p(d.getMinutes())}00`;
+}
+function downloadReminderICS(key) {
+  const r = state.reminders[key];
+  const [hh, mm] = r.time.split(':').map(Number);
+  const start = new Date(); start.setHours(hh, mm, 0, 0);
+  const end = new Date(start.getTime() + 15 * 60000);
+  const rrule = r.days.length ? `RRULE:FREQ=WEEKLY;BYDAY=${r.days.map(d => ICS_DAY[d]).join(',')}` : '';
+  const lines = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//LeanTrack//Reminders//EN', 'CALSCALE:GREGORIAN',
+    'BEGIN:VEVENT',
+    `UID:leantrack-${key}-${Date.now()}@leantrack`,
+    `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
+    `DTSTART:${icsStamp(start)}`,
+    `DTEND:${icsStamp(end)}`,
+    rrule,
+    `SUMMARY:LeanTrack: ${r.label}`,
+    'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${r.label}`, 'TRIGGER:-PT0M', 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR',
+  ].filter(Boolean).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([lines], { type: 'text/calendar' }));
+  a.download = `leantrack-${key}.ics`;
+  a.click();
 }
 $('#enableNotif').addEventListener('click', async () => {
   if (!hasNotif) return;
@@ -702,6 +739,7 @@ $('#reminderList').addEventListener('change', e => {
   save();
 });
 $('#reminderList').addEventListener('click', e => {
+  const ical = e.target.dataset.rical; if (ical !== undefined) { downloadReminderICS(ical); return; }
   const day = e.target.dataset.rday; if (day === undefined) return;
   const row = e.target.closest('.reminder-row'), r = state.reminders[row.dataset.key], d = +day;
   r.days = r.days.includes(d) ? r.days.filter(x => x !== d) : [...r.days, d].sort();

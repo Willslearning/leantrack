@@ -56,12 +56,26 @@ This completes the original 5-phase roadmap.
 
 Bumped the service worker's cache name (`leantrack-v2` in [sw.js](sw.js)) since Phase 5's cache-first strategy would otherwise keep serving the pre-Phase-6 `index.html`/`app.js`/etc. to returning visitors — worth remembering to do this on every phase that touches cached files, now that Phase 5 exists.
 
-## Phase 7 — Meal-time alarms
+## Phase 7 — Meal-time alarms ✅ Done
 - Extends the existing Reminders feature (Phase 3) with three more built-in time slots: Breakfast time, Lunch time, Dinner time — same enable/time/day-of-week controls already in place, no new mechanism needed.
 - Low-effort, high-value addition since Phases 3 and 5 already did the hard part (permissions, the check loop, service-worker notifications).
+
+**Notes:** Added Breakfast/Lunch/Dinner reminders, plus a **Drink water** reminder (user-requested — water tracking existed since Phase 2 but had no reminder tied to it). Both needed zero new UI code since `renderReminders()` already builds its list generically from `state.reminders`. Also added, per user feedback that in-browser notifications aren't reliable enough: an **"Add to Calendar"** button on every reminder that downloads a real recurring `.ics` calendar event (with its own alert) for your phone's native Calendar app — this works even with LeanTrack fully closed, no account or push server needed, and is the most reliable option of everything built so far. Times are written as "floating" (no timezone marker), which calendar apps correctly read as "local time, whatever timezone I'm in."
+
+Also added 15 more meal ideas (24 → 39) per user feedback asking for more variety, in the same structured-ingredient format the Planner/shopping list depend on.
+
+## Phase 8 — Meal ingredient substitution
+- User-requested: swap an ingredient in a meal idea (e.g. can't eat peppers → swap in lettuce) and have the meal's calories/macros actually recalculate, not just the ingredient list changing cosmetically.
+- Requires restructuring meal data: every ingredient needs its own per-serving nutrition (calories/protein/carbs/fat), so a meal's totals become the *sum* of its current ingredients rather than a fixed stated number. This is a real data model change across all 39 meals, not a small addition — planned as its own phase rather than squeezed in alongside smaller fixes.
+- Rough shape: each ingredient gets a nutrition entry (reusing/extending the existing `FOODS` data where possible so there's one source of truth, not two); a "Swap" picker on a meal (in Meal ideas and/or the Planner) lets you replace one ingredient with another food of the same rough category; the meal's displayed cal/p/c/f recompute live from the ingredient list. Needs a decision on where the swap lives (just when logging it that day vs. a saved personal variant of the meal) — to be worked out when this phase starts.
+
+---
+
+## Parked ideas (not being built right now)
+- **Fitbit / Google Fit / real step-count syncing.** Skipped for now per user request — these need a developer account registered with Fitbit or Google (this app has no backend of its own to hold shared credentials), which is a bigger commitment than the app's current "no accounts" design. Revisit if wanted later; a simpler middle ground (manual daily step entry, no sync) is always available as a smaller alternative.
 
 ---
 
 **Order:** 1 → 2 → 3 → 4 → 5 → 6 → 7, each phase shippable and testable before moving to the next.
 
-**Status:** Phases 1–6 done. Phase 7 planned, not started.
+**Status:** Phases 1–7 done. Phase 8 planned, not started.

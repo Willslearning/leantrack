@@ -82,6 +82,7 @@ canvas{width:100%;height:auto;max-width:100%}
 .day-toggle{display:flex;gap:4px;margin-top:8px}
 .day-toggle button{padding:4px 0;width:34px;font-size:.8rem;border-radius:6px}
 .day-toggle button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.ical-btn{margin-top:8px;font-size:.82rem;padding:6px 10px}
 .plan-day{margin-bottom:10px}
 .plan-day h3{margin:0 0 8px;font-size:.95rem}
 .plan-day h3 .plan-day-cal{color:var(--muted);font-weight:400;font-size:.8rem}
