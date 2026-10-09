@@ -359,6 +359,12 @@ async function startScan() {
 }
 function stopScan() {
   zxingControls?.stop(); zxingControls = null;
+  // Belt-and-suspenders: some ZXing versions' controls.stop() doesn't reliably release the camera
+  // hardware on its own (the recording indicator can stay on) — stop the MediaStream tracks
+  // directly too and detach them from the <video> element.
+  const video = $('#scanVideo');
+  const stream = video.srcObject;
+  if (stream) { stream.getTracks().forEach(t => t.stop()); video.srcObject = null; }
   $('#scanWrap').hidden = true;
 }
 $('#customForm').addEventListener('submit', e => {
