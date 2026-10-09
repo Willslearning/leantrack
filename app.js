@@ -15,6 +15,7 @@ function load() {
     profile: null, goal: 2000, log: {}, weights: [], custom: [], offCache: {}, barcodeCache: {}, activities: {}, water: {}, waterGoal: 8,
     plan: {}, shoppingChecked: {},
     diet: { type: 'none', avoid: [] }, // avoid: mix of ALLERGENS keys and free-text custom words
+    favorites: [], // saved foods (any source) for one-tap re-adding without searching/scanning again
     reminders: {
       walk: { label: 'Time for your walk', enabled: false, time: '08:00', days: [1, 2, 3, 4, 5], lastFired: null },
       logMeals: { label: 'Log today’s meals', enabled: false, time: '20:00', days: [0, 1, 2, 3, 4, 5, 6], lastFired: null },
@@ -222,26 +223,51 @@ function addEntry(food, meal) {
 let onlineResults = [], onlineStatus = ''; // '' | 'loading' | 'done' | 'error'
 let searchTimer = null, searchCtrl = null;
 
+// Favorites: saved by name (lowercased) so the same food from any source (built-in, custom,
+// Open Food Facts, barcode) collapses to one entry. foodPool remembers the full object behind
+// whatever key is currently rendered, so the star button can save it without re-fetching anything.
+const foodPool = new Map();
+const isFavorite = f => state.favorites.some(x => lc(x.n) === lc(f.n));
+function toggleFavorite(key) {
+  const food = foodPool.get(key);
+  if (state.favorites.some(x => lc(x.n) === key)) state.favorites = state.favorites.filter(x => lc(x.n) !== key);
+  else if (food) state.favorites = [...state.favorites, food];
+  save();
+}
 function foodLi(f, attr) {
+  const key = lc(f.n);
+  foodPool.set(key, f);
   const tag = f.source === 'off' ? '<span class="src-off">Open Food Facts</span>' : '';
   const warn = dietWarnings(f).map(w => `<span class="diet-warn">${esc(w)}</span>`).join('');
+  const fav = isFavorite(f);
   return `<li><div>${esc(f.n)}${tag}${warn}<small>${esc(f.s || '')} · ${f.cal} cal · P ${f.p || 0} C ${f.c || 0} F ${f.f || 0}</small></div>
-    <button ${attr}>Add</button></li>`;
+    <div class="li-actions">
+      <button class="fav-btn ${fav ? 'on' : ''}" data-favtoggle="${esc(key)}" aria-label="${fav ? 'Remove from favorites' : 'Add to favorites'}">${fav ? '★' : '☆'}</button>
+      <button ${attr}>Add</button>
+    </div></li>`;
 }
 // Draws the list from current state only — never schedules a search itself,
 // so re-renders (cache hits, async results landing, day navigation) can't recurse.
 function renderResultsList() {
   const q = $('#foodSearch').value.trim();
   const ql = q.toLowerCase();
+  if (!ql) {
+    // Nothing typed yet: show Favorites as a one-tap shortcut instead of an empty list, so a
+    // saved food (e.g. "that Red Bull") never needs searching or scanning again.
+    $('#foodResults').innerHTML = state.favorites.length
+      ? `<li class="muted">Favorites</li>` + state.favorites.map(f => foodLi(f, `data-add-fav="${esc(lc(f.n))}"`)).join('')
+      : '<li class="muted">Search for a food, or star a result to save it here for next time.</li>';
+    return;
+  }
   const all = [...state.custom, ...FOODS];
-  const local = ql ? all.filter(f => f.n.toLowerCase().includes(ql)).slice(0, 8) : [];
+  const local = all.filter(f => f.n.toLowerCase().includes(ql)).slice(0, 8);
   let html = local.map(f => foodLi(f, `data-add="${all.indexOf(f)}"`)).join('');
   if (ql.length >= 2) {
     if (onlineStatus === 'loading') html += '<li class="muted">Searching Open Food Facts…</li>';
     else if (onlineStatus === 'error') html += '<li class="muted">Couldn’t reach Open Food Facts (offline?). Showing built-in foods only.</li>';
     else if (onlineStatus === 'done') html += onlineResults.map((f, i) => foodLi(f, `data-online="${i}"`)).join('');
   }
-  $('#foodResults').innerHTML = html || (ql ? '<li class="muted">No match. Try the custom food form below.</li>' : '');
+  $('#foodResults').innerHTML = html || '<li class="muted">No match. Try the custom food form below.</li>';
 }
 // Called only on user input: decides whether to use cache, debounce a fetch, or clear online results.
 function scheduleOnlineSearch(q) {
@@ -266,9 +292,11 @@ function scheduleOnlineSearch(q) {
 }
 $('#foodSearch').addEventListener('input', () => { renderResultsList(); scheduleOnlineSearch($('#foodSearch').value); });
 $('#foodResults').addEventListener('click', e => {
-  const i = e.target.dataset.add, oi = e.target.dataset.online;
-  if (i !== undefined) addEntry([...state.custom, ...FOODS][+i], $('#mealSel').value);
+  const i = e.target.dataset.add, oi = e.target.dataset.online, fk = e.target.dataset.addFav, star = e.target.dataset.favtoggle;
+  if (star !== undefined) { toggleFavorite(star); renderResultsList(); }
+  else if (i !== undefined) addEntry([...state.custom, ...FOODS][+i], $('#mealSel').value);
   else if (oi !== undefined) addEntry(onlineResults[+oi], $('#mealSel').value);
+  else if (fk !== undefined) addEntry(foodPool.get(fk), $('#mealSel').value);
 });
 
 // ---- Barcode lookup & camera scan (Phase 1) ----
@@ -297,6 +325,8 @@ $('#barcodeForm').addEventListener('submit', async e => {
   }
 });
 $('#barcodeResult').addEventListener('click', e => {
+  const star = e.target.dataset.favtoggle;
+  if (star !== undefined) { toggleFavorite(star); renderBarcodeResult(''); return; }
   if (e.target.dataset.barcodeAdd === undefined) return;
   addEntry(barcodeResult, $('#mealSel').value);
 });
@@ -339,12 +369,20 @@ async function startScan() {
   }
   renderBarcodeResult('');
   $('#scanWrap').hidden = false;
-  const hints = new Map([[ZXing.DecodeHintType.POSSIBLE_FORMATS,
-    [ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8, ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E]]]);
+  // TRY_HARDER spends more effort per frame decoding — slower, but noticeably better at reading
+  // barcodes that wrap around curved cans/bottles, which is the single most common real-world
+  // scan failure (the barcode image itself is distorted, not a bug in the scanner).
+  const hints = new Map([
+    [ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8, ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E]],
+    [ZXing.DecodeHintType.TRY_HARDER, true],
+  ]);
   const reader = new ZXing.BrowserMultiFormatReader(hints);
+  // Request a higher resolution + continuous autofocus where supported — default camera settings
+  // are often too low-res/soft-focused for a small barcode to resolve. `advanced` constraints that
+  // aren't supported on a device are just ignored by the browser, not an error.
+  const constraints = { video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 }, advanced: [{ focusMode: 'continuous' }] } };
   try {
-    zxingControls = await reader.decodeFromConstraints(
-      { video: { facingMode: 'environment' } }, $('#scanVideo'),
+    zxingControls = await reader.decodeFromConstraints(constraints, $('#scanVideo'),
       (result) => {
         if (!result) return; // fires continuously with a "not found" error while no barcode is in view
         $('#barcodeIn').value = result.getText();

@@ -1,6 +1,6 @@
 // Service worker for offline support + installability (Phase 5). Bump CACHE when the asset
 // list below changes meaningfully, so returning users pick up the new files instead of stale ones.
-const CACHE = 'leantrack-v5'; // bumped: camera now reliably releases after a barcode scan (app.js)
+const CACHE = 'leantrack-v6'; // bumped: better curved-barcode scanning + new Favorites feature
 const ASSETS = [
   './',
   './index.html',
