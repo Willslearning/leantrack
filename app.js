@@ -312,7 +312,12 @@ function loadZXing() {
   if (!zxingLoadPromise) {
     zxingLoadPromise = new Promise((resolve, reject) => {
       const s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library/umd/index.min.js';
+      // Pinned to an exact version + Subresource Integrity hash (verified against jsdelivr's own
+      // published file hash when added) — the browser refuses to run this script if the bytes
+      // served ever don't match exactly, so a compromised CDN or package can't silently swap it.
+      s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.23.0/umd/index.min.js';
+      s.integrity = 'sha256-Pt6UFT+wxbZ6Etet/23s2CfCsicU/cb67PJ6jyCTfqY=';
+      s.crossOrigin = 'anonymous';
       s.onload = resolve; s.onerror = () => reject(new Error('load failed'));
       document.head.appendChild(s);
     });
