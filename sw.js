@@ -1,6 +1,6 @@
 // Service worker for offline support + installability (Phase 5). Bump CACHE when the asset
 // list below changes meaningfully, so returning users pick up the new files instead of stale ones.
-const CACHE = 'leantrack-v2'; // bumped for Phase 6 (diet/allergy filtering changed index.html/app.js/data.js/foodapi.js)
+const CACHE = 'leantrack-v3'; // bumped: swapped camera barcode scanning to the ZXing library (iOS Safari support), app.js changed
 const ASSETS = [
   './',
   './index.html',

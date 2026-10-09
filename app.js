@@ -272,7 +272,7 @@ $('#foodResults').addEventListener('click', e => {
 });
 
 // ---- Barcode lookup & camera scan (Phase 1) ----
-let barcodeResult = null, scanStream = null, scanRAF = null;
+let barcodeResult = null;
 function renderBarcodeResult(msg) {
   $('#barcodeResult').innerHTML = barcodeResult ? foodLi(barcodeResult, 'data-barcode-add') : (msg ? `<li class="muted">${esc(msg)}</li>` : '');
 }
@@ -301,37 +301,59 @@ $('#barcodeResult').addEventListener('click', e => {
   addEntry(barcodeResult, $('#mealSel').value);
 });
 
-// Camera scanning only offered when the browser supports it (needs BarcodeDetector + camera access,
-// which plain file:// pages often can't grant) — manual entry above always works as the fallback.
-if ('BarcodeDetector' in window && navigator.mediaDevices?.getUserMedia) {
+// Camera scanning uses the ZXing JS barcode library (pure JS decoding from camera frames) instead
+// of the native BarcodeDetector API, because BarcodeDetector is Chromium-only — iOS Safari (and
+// every other iOS browser, which must use WebKit) never implemented it. ZXing works everywhere
+// getUserMedia does. It's loaded lazily from a CDN only when the scan button is actually clicked,
+// so the rest of the app never depends on it or on being online; manual entry is always available.
+let zxingControls = null, zxingLoadPromise = null;
+function loadZXing() {
+  if (window.ZXing) return Promise.resolve();
+  if (!zxingLoadPromise) {
+    zxingLoadPromise = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library/umd/index.min.js';
+      s.onload = resolve; s.onerror = () => reject(new Error('load failed'));
+      document.head.appendChild(s);
+    });
+  }
+  return zxingLoadPromise;
+}
+if (navigator.mediaDevices?.getUserMedia) {
   $('#scanBtn').hidden = false;
   $('#scanBtn').addEventListener('click', startScan);
   $('#scanClose').addEventListener('click', stopScan);
 }
 async function startScan() {
+  barcodeResult = null; renderBarcodeResult('Loading scanner…');
   try {
-    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    await loadZXing();
   } catch {
-    renderBarcodeResult('Camera access was denied or unavailable.');
+    renderBarcodeResult('Couldn’t load the scanner (offline?). Type the barcode instead.');
     return;
   }
-  const video = $('#scanVideo');
-  video.srcObject = scanStream; video.play();
+  renderBarcodeResult('');
   $('#scanWrap').hidden = false;
-  const detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] });
-  const tick = async () => {
-    if (!scanStream) return;
-    try {
-      const codes = await detector.detect(video);
-      if (codes.length) { $('#barcodeIn').value = codes[0].rawValue; stopScan(); $('#barcodeForm').requestSubmit(); return; }
-    } catch { /* detection hiccup; keep trying */ }
-    scanRAF = requestAnimationFrame(tick);
-  };
-  scanRAF = requestAnimationFrame(tick);
+  const hints = new Map([[ZXing.DecodeHintType.POSSIBLE_FORMATS,
+    [ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8, ZXing.BarcodeFormat.UPC_A, ZXing.BarcodeFormat.UPC_E]]]);
+  const reader = new ZXing.BrowserMultiFormatReader(hints);
+  try {
+    zxingControls = await reader.decodeFromConstraints(
+      { video: { facingMode: 'environment' } }, $('#scanVideo'),
+      (result) => {
+        if (!result) return; // fires continuously with a "not found" error while no barcode is in view
+        $('#barcodeIn').value = result.getText();
+        stopScan();
+        $('#barcodeForm').requestSubmit();
+      }
+    );
+  } catch {
+    renderBarcodeResult('Camera access was denied or unavailable.');
+    $('#scanWrap').hidden = true;
+  }
 }
 function stopScan() {
-  if (scanRAF) cancelAnimationFrame(scanRAF); scanRAF = null;
-  scanStream?.getTracks().forEach(t => t.stop()); scanStream = null;
+  zxingControls?.stop(); zxingControls = null;
   $('#scanWrap').hidden = true;
 }
 $('#customForm').addEventListener('submit', e => {

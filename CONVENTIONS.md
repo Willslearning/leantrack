@@ -3,8 +3,8 @@
 Standards to keep the app consistent as we build out the [roadmap](PLAN.md). Follow these unless a specific task calls for an exception (note the exception inline if so).
 
 ## Stack & philosophy
-- Plain HTML/CSS/JS. No build step, no bundler, no frameworks, no npm dependencies in the shipped app.
-- A dev-only tool (e.g. `http-server` for local preview) is fine, but nothing the shipped app depends on at runtime beyond the browser itself.
+- Plain HTML/CSS/JS. No build step, no bundler, no frameworks, no npm-installed dependencies in the shipped app.
+- A dev-only tool (e.g. `http-server` for local preview) is fine, but nothing the shipped app depends on at runtime beyond the browser itself — with one narrow exception: a small, well-known JS library loaded lazily from a CDN (`<script src>`, no bundler) for a single feature that genuinely needs it (e.g. ZXing for camera barcode scanning), only fetched when that feature is actually used, and the feature must fail gracefully if it can't load. Don't reach for this casually — it's for cases like "no browser API exists for this," not convenience.
 - Works by opening `index.html` directly, or via a static file server. Never require a backend unless a phase explicitly adds one (see PLAN.md Phase 5+).
 - Everything works offline except features that are explicitly online (Open Food Facts search/barcode lookup). Those must fail gracefully with a clear message, not a broken screen, when offline.
 
