@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LeanTrack</title>
+<meta name="description" content="Track calories, exercise and meals — all stored on your device.">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#217a51">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LeanTrack">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>LeanTrack</h1>
+  <nav id="tabs">
+    <button data-tab="today" class="active">Today</button>
+    <button data-tab="meals">Meal ideas</button>
+    <button data-tab="planner">Planner</button>
+    <button data-tab="progress">Progress</button>
+    <button data-tab="profile">Profile</button>
+  </nav>
+</header>
+
+<main>
+  <!-- TODAY -->
+  <section id="tab-today">
+    <div class="date-row">
+      <button id="prevDay" aria-label="Previous day">‹</button>
+      <strong id="dateLabel"></strong>
+      <button id="nextDay" aria-label="Next day">›</button>
+    </div>
+
+    <div class="card summary">
+      <div class="ring-wrap">
+        <svg viewBox="0 0 120 120" class="ring">
+          <circle cx="60" cy="60" r="52" class="ring-bg"/>
+          <circle cx="60" cy="60" r="52" class="ring-fg" id="ringFg"/>
+        </svg>
+        <div class="ring-text"><span id="remaining">0</span><small id="remainingLabel">left</small></div>
+      </div>
+      <div class="stats">
+        <div><b id="goalCal">0</b><small>goal</small></div>
+        <div><b id="eatenCal">0</b><small>eaten</small></div>
+        <div><b id="exerciseCal">0</b><small>exercise</small></div>
+        <div class="macro"><b id="pTot">0g</b><small>protein</small></div>
+        <div class="macro"><b id="cTot">0g</b><small>carbs</small></div>
+        <div class="macro"><b id="fTot">0g</b><small>fat</small></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Add food</h2>
+      <div class="row">
+        <select id="mealSel">
+          <option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snack</option>
+        </select>
+        <input id="foodSearch" type="search" placeholder="Search foods (e.g. banana, chicken)" autocomplete="off">
+      </div>
+      <ul id="foodResults" class="results"></ul>
+      <details>
+        <summary>Scan or enter a barcode</summary>
+        <form id="barcodeForm" class="row">
+          <input id="barcodeIn" inputmode="numeric" pattern="[0-9]*" placeholder="UPC / barcode number">
+          <button class="primary">Look up</button>
+          <button type="button" id="scanBtn" hidden>Scan with camera</button>
+        </form>
+        <ul id="barcodeResult" class="results"></ul>
+        <div id="scanWrap" hidden>
+          <video id="scanVideo" class="scan-video" playsinline muted></video>
+          <button type="button" id="scanClose">Close scanner</button>
+        </div>
+      </details>
+      <details>
+        <summary>Add a custom food</summary>
+        <form id="customForm" class="grid">
+          <input name="name" placeholder="Name" required>
+          <input name="serving" placeholder="Serving (e.g. 1 cup)">
+          <input name="cal" type="number" min="0" placeholder="Calories" required>
+          <input name="p" type="number" min="0" step="0.1" placeholder="Protein g">
+          <input name="c" type="number" min="0" step="0.1" placeholder="Carbs g">
+          <input name="f" type="number" min="0" step="0.1" placeholder="Fat g">
+          <button class="primary">Save &amp; add</button>
+        </form>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>Activity</h2>
+      <div class="chips" id="activityQuick"></div>
+      <details>
+        <summary>Add a custom activity</summary>
+        <form id="activityForm" class="grid">
+          <select name="type" id="activityType"></select>
+          <input name="mins" type="number" min="1" placeholder="Minutes" value="30" required>
+          <input name="cal" type="number" min="0" placeholder="Calories burned (optional, auto-estimated)">
+          <button class="primary">Add</button>
+        </form>
+      </details>
+      <ul id="activityList" class="results"></ul>
+    </div>
+
+    <div class="card">
+      <h2>Water</h2>
+      <div class="row water-row">
+        <button type="button" id="waterMinus" aria-label="Remove a cup">−</button>
+        <span id="waterCount">0</span><small class="muted">/ <span id="waterGoal">8</span> cups</small>
+        <button type="button" id="waterPlus" aria-label="Add a cup">+</button>
+      </div>
+    </div>
+
+    <div id="logList"></div>
+  </section>
+
+  <!-- MEALS -->
+  <section id="tab-meals" hidden>
+    <div class="card">
+      <h2>Healthy meal ideas</h2>
+      <p class="muted" id="mealHint"></p>
+      <div class="chips" id="mealFilters"></div>
+    </div>
+    <div id="mealList" class="meal-grid"></div>
+  </section>
+
+  <!-- PLANNER -->
+  <section id="tab-planner" hidden>
+    <div class="date-row">
+      <button id="prevWeek" aria-label="Previous week">‹</button>
+      <strong id="weekLabel"></strong>
+      <button id="nextWeek" aria-label="Next week">›</button>
+    </div>
+    <div id="plannerGrid"></div>
+    <div class="card">
+      <h2>Shopping list</h2>
+      <p class="muted" id="shoppingHint"></p>
+      <div id="shoppingList"></div>
+    </div>
+  </section>
+
+  <!-- PROGRESS -->
+  <section id="tab-progress" hidden>
+    <div class="card">
+      <h2>Log weight</h2>
+      <form id="weightForm" class="row">
+        <input id="weightIn" type="number" step="0.1" min="0" required>
+        <span id="weightUnit"></span>
+        <button class="primary">Save</button>
+      </form>
+      <p id="weightSummary" class="muted"></p>
+    </div>
+    <div class="card">
+      <h2>Weight trend</h2>
+      <canvas id="weightChart" width="600" height="260"></canvas>
+      <ul id="weightList" class="results"></ul>
+    </div>
+    <div class="card">
+      <h2>Last 7 days (calories)</h2>
+      <canvas id="calChart" width="600" height="220"></canvas>
+    </div>
+    <div class="card">
+      <h2>Activity</h2>
+      <p class="muted" id="activitySummary"></p>
+      <canvas id="activityChart" width="600" height="220"></canvas>
+    </div>
+  </section>
+
+  <!-- PROFILE -->
+  <section id="tab-profile" hidden>
+    <form id="profileForm" class="card grid">
+      <h2 class="span">Your details</h2>
+      <label>Units
+        <select name="units"><option value="imperial">lb / in</option><option value="metric">kg / cm</option></select>
+      </label>
+      <label>Sex
+        <select name="sex"><option value="female">Female</option><option value="male">Male</option></select>
+      </label>
+      <label>Age <input name="age" type="number" min="14" max="100" required></label>
+      <label>Height <span class="unit-h"></span> <input name="height" type="number" step="0.1" min="0" required></label>
+      <label>Current weight <span class="unit-w"></span> <input name="weight" type="number" step="0.1" min="0" required></label>
+      <label>Goal weight <span class="unit-w"></span> <input name="goal" type="number" step="0.1" min="0" required></label>
+      <label>Activity
+        <select name="activity">
+          <option value="1.2">Sedentary (desk job, little exercise)</option>
+          <option value="1.375">Light (1–3 workouts/week)</option>
+          <option value="1.55">Moderate (3–5 workouts/week)</option>
+          <option value="1.725">Very active (6–7 workouts/week)</option>
+        </select>
+      </label>
+      <label>Loss pace
+        <select name="pace">
+          <option value="0.5">Gentle – 0.5 lb/week</option>
+          <option value="1">Steady – 1 lb/week</option>
+          <option value="1.5">Faster – 1.5 lb/week</option>
+          <option value="2">Aggressive – 2 lb/week</option>
+        </select>
+      </label>
+      <button class="primary span">Save &amp; calculate goal</button>
+      <div id="goalResult" class="span result-box"></div>
+    </form>
+    <div class="card">
+      <h2>Diet &amp; allergies</h2>
+      <label>Diet type
+        <select id="dietType">
+          <option value="none">No restriction</option>
+          <option value="vegetarian">Vegetarian</option>
+          <option value="vegan">Vegan</option>
+        </select>
+      </label>
+      <p class="muted small diet-label">Avoid:</p>
+      <div class="chips" id="allergenChips"></div>
+      <form id="customAvoidForm" class="row diet-custom-form">
+        <input id="customAvoidIn" placeholder="Other food to avoid (e.g. mushroom)">
+        <button class="primary">Add</button>
+      </form>
+      <div id="customAvoidList" class="chips diet-custom-list"></div>
+      <p class="muted small">Meal ideas and the Planner hide anything that doesn't fit. Your own food search just gets a warning tag — it never stops you from logging something.</p>
+    </div>
+    <div class="card">
+      <h2>Install app</h2>
+      <p class="muted" id="installStatus"></p>
+      <button type="button" id="installBtn" hidden>Install LeanTrack</button>
+    </div>
+    <div class="card">
+      <h2>Reminders</h2>
+      <p class="muted" id="notifStatus"></p>
+      <button type="button" id="enableNotif">Enable notifications</button>
+      <div id="reminderList"></div>
+      <p class="muted small">Reminders fire more reliably once LeanTrack is installed (see above) — a plain browser tab still needs to stay open.</p>
+    </div>
+    <div class="card">
+      <h2>Data</h2>
+      <button id="exportBtn">Export backup</button>
+      <button id="resetBtn" class="danger">Erase all data</button>
+      <p class="muted">Everything is stored only in this browser on this computer.</p>
+    </div>
+    <p class="muted small">LeanTrack gives general estimates, not medical advice. Check with a doctor or dietitian before starting a diet, especially if you have a health condition.</p>
+  </section>
+</main>
+<script src="data.js"></script>
+<script src="foodapi.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
