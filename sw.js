@@ -1,6 +1,6 @@
 // Service worker for offline support + installability (Phase 5). Bump CACHE when the asset
 // list below changes meaningfully, so returning users pick up the new files instead of stale ones.
-const CACHE = 'leantrack-v11'; // bumped: dropped meal-type categories from Today's log, now a flat timestamped list
+const CACHE = 'leantrack-v12'; // bumped: moved the food log above Activity/Water on Today
 const ASSETS = [
   './',
   './index.html',
