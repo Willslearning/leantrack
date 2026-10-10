@@ -17,13 +17,6 @@
 <body>
 <header>
   <h1>LeanTrack</h1>
-  <nav id="tabs">
-    <button data-tab="today" class="active">Today</button>
-    <button data-tab="meals">Meal ideas</button>
-    <button data-tab="planner">Planner</button>
-    <button data-tab="progress">Progress</button>
-    <button data-tab="profile">Profile</button>
-  </nav>
 </header>
 
 <main>
@@ -241,6 +234,30 @@
     <p class="muted small">LeanTrack gives general estimates, not medical advice. Check with a doctor or dietitian before starting a diet, especially if you have a health condition.</p>
   </section>
 </main>
+
+<nav id="tabs" class="bottom-nav">
+  <button data-tab="today" class="active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3a9 9 0 1 0 9 9"/></svg>
+    <span>Today</span>
+  </button>
+  <button data-tab="meals">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2v7a1.5 1.5 0 0 0 3 0V2M8.5 9v13M16.5 2c-1.8 2.5-1.8 6 0 8 .7.8.7 1 .7 2v9"/></svg>
+    <span>Meals</span>
+  </button>
+  <button data-tab="planner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
+    <span>Planner</span>
+  </button>
+  <button data-tab="progress">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l6-7 4 4 7-9"/><path d="M14 6h6v6"/></svg>
+    <span>Progress</span>
+  </button>
+  <button data-tab="profile">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+    <span>Profile</span>
+  </button>
+</nav>
+
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 <script src="data.js"></script>
 <script src="foodapi.js"></script>
