@@ -48,22 +48,13 @@
 
     <div class="card">
       <h2>Add food</h2>
-      <input id="foodSearch" type="search" placeholder="Search foods (e.g. banana, chicken)" autocomplete="off">
+      <div class="row">
+        <input id="foodSearch" type="search" placeholder="Search foods (e.g. banana, chicken)" autocomplete="off">
+        <button type="button" id="scanBtn" class="icon-btn" aria-label="Scan a barcode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M20 8V6a2 2 0 0 0-2-2h-2M4 16v2a2 2 0 0 0 2 2h2M20 16v2a2 2 0 0 1-2 2h-2"/><circle cx="12" cy="12" r="3.5"/></svg>
+        </button>
+      </div>
       <ul id="foodResults" class="results"></ul>
-      <details>
-        <summary>Scan or enter a barcode</summary>
-        <form id="barcodeForm" class="row">
-          <input id="barcodeIn" inputmode="numeric" pattern="[0-9]*" placeholder="UPC / barcode number">
-          <button class="primary">Look up</button>
-          <button type="button" id="scanBtn" hidden>Scan with camera</button>
-        </form>
-        <ul id="barcodeResult" class="results"></ul>
-        <div id="scanWrap" hidden>
-          <video id="scanVideo" class="scan-video" playsinline muted></video>
-          <p class="muted small scan-tip">Hold steady and fill the frame with the barcode. On a can or bottle, the curve can make it hard to read — try angling it so the barcode faces the camera as flat as possible, or get in closer.</p>
-          <button type="button" id="scanClose">Close scanner</button>
-        </div>
-      </details>
       <details>
         <summary>Add a custom food</summary>
         <form id="customForm" class="grid">
@@ -252,6 +243,26 @@
     <span>Profile</span>
   </button>
 </nav>
+
+<div id="barcodeModal" class="modal-overlay" hidden>
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>Scan barcode</h3>
+      <button type="button" id="barcodeModalClose" aria-label="Cancel">✕</button>
+    </div>
+    <div id="scanWrap">
+      <video id="scanVideo" class="scan-video" playsinline muted></video>
+      <p class="muted small scan-tip">Hold steady and fill the frame with the barcode. On a can or bottle, the curve can make it hard to read — try angling it so the barcode faces the camera as flat as possible, or get in closer.</p>
+      <button type="button" id="manualEntryLink">Can't scan? Enter the number instead</button>
+    </div>
+    <form id="barcodeManualForm" class="row" hidden>
+      <input id="barcodeManualIn" inputmode="numeric" pattern="[0-9]*" placeholder="UPC / barcode number" autocomplete="off">
+      <button class="primary">Look up</button>
+    </form>
+    <p class="muted small" id="barcodeModalMsg"></p>
+    <ul id="barcodeResult" class="results"></ul>
+  </div>
+</div>
 
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 <script src="data.js"></script>

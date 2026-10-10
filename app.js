@@ -322,15 +322,16 @@ $('#foodResults').addEventListener('click', e => {
   renderResultsList();
 });
 
-// ---- Barcode lookup & camera scan (Phase 1) ----
+// ---- Barcode lookup & camera scan, via a modal (Phase 1; redesigned per user request) ----
+// Tapping the camera icon opens the modal straight into the camera. If scanning can't happen for
+// any reason (no camera, permission denied, offline so the scanner library can't load), the modal
+// falls back to a manual UPC entry form automatically instead of leaving a dead end — plus a
+// "Can't scan?" link lets you switch to manual entry any time, and Cancel/✕/Escape closes it.
 let barcodeResult = null;
 function renderBarcodeResult(msg) {
   $('#barcodeResult').innerHTML = barcodeResult ? foodLi(barcodeResult, 'data-barcode-add') : (msg ? `<li class="muted">${esc(msg)}</li>` : '');
 }
-$('#barcodeForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const code = $('#barcodeIn').value.trim();
-  if (!code) return;
+async function lookupCode(code) {
   barcodeResult = null; renderBarcodeResult('Looking up…');
   if (state.barcodeCache[code] !== undefined) {
     barcodeResult = state.barcodeCache[code];
@@ -346,14 +347,19 @@ $('#barcodeForm').addEventListener('submit', async e => {
   } catch {
     renderBarcodeResult('Couldn’t reach Open Food Facts (offline?).');
   }
+}
+$('#barcodeManualForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const code = $('#barcodeManualIn').value.trim();
+  if (code) lookupCode(code);
 });
 $('#barcodeResult').addEventListener('click', e => {
   const star = e.target.dataset.favtoggle;
   if (star !== undefined) { toggleFavorite(star); renderBarcodeResult(''); return; }
   if (e.target.dataset.barcodeAdd === undefined) return;
   addEntry(barcodeResult);
-  // Clear the result + typed code so it doesn't look like the tap didn't register.
-  barcodeResult = null; $('#barcodeIn').value = ''; renderBarcodeResult('');
+  barcodeResult = null;
+  closeBarcodeModal(); // found it and logged it — nothing more to do here
 });
 
 // Camera scanning uses the ZXing JS barcode library (pure JS decoding from camera frames) instead
@@ -379,21 +385,38 @@ function loadZXing() {
   }
   return zxingLoadPromise;
 }
-if (navigator.mediaDevices?.getUserMedia) {
-  $('#scanBtn').hidden = false;
-  $('#scanBtn').addEventListener('click', startScan);
-  $('#scanClose').addEventListener('click', stopScan);
+function openBarcodeModal() {
+  barcodeResult = null; renderBarcodeResult('');
+  $('#barcodeManualIn').value = '';
+  $('#barcodeManualForm').hidden = true;
+  $('#scanWrap').hidden = false;
+  $('#barcodeModal').hidden = false;
+  startScan();
 }
+function closeBarcodeModal() {
+  stopScan();
+  $('#barcodeModal').hidden = true;
+}
+function showManualEntry(msg) {
+  stopScan(); // no-op if the camera was never started — safe to call either way
+  $('#barcodeManualForm').hidden = false;
+  renderBarcodeResult(msg || '');
+  $('#barcodeManualIn').focus();
+}
+$('#scanBtn').addEventListener('click', openBarcodeModal);
+$('#barcodeModalClose').addEventListener('click', closeBarcodeModal);
+$('#manualEntryLink').addEventListener('click', () => showManualEntry(''));
+$('#barcodeModal').addEventListener('click', e => { if (e.target.id === 'barcodeModal') closeBarcodeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#barcodeModal').hidden) closeBarcodeModal(); });
 async function startScan() {
-  barcodeResult = null; renderBarcodeResult('Loading scanner…');
+  renderBarcodeResult('Loading scanner…');
   try {
     await loadZXing();
   } catch {
-    renderBarcodeResult('Couldn’t load the scanner (offline?). Type the barcode instead.');
+    showManualEntry('Couldn’t load the scanner (offline?). Type the barcode instead.');
     return;
   }
   renderBarcodeResult('');
-  $('#scanWrap').hidden = false;
   // TRY_HARDER spends more effort per frame decoding — slower, but noticeably better at reading
   // barcodes that wrap around curved cans/bottles, which is the single most common real-world
   // scan failure (the barcode image itself is distorted, not a bug in the scanner).
@@ -410,14 +433,13 @@ async function startScan() {
     zxingControls = await reader.decodeFromConstraints(constraints, $('#scanVideo'),
       (result) => {
         if (!result) return; // fires continuously with a "not found" error while no barcode is in view
-        $('#barcodeIn').value = result.getText();
+        const code = result.getText();
         stopScan();
-        $('#barcodeForm').requestSubmit();
+        lookupCode(code);
       }
     );
   } catch {
-    renderBarcodeResult('Camera access was denied or unavailable.');
-    $('#scanWrap').hidden = true;
+    showManualEntry('Camera access was denied or unavailable. Type the barcode instead.');
   }
 }
 function stopScan() {
