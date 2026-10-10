@@ -1,6 +1,6 @@
 // Service worker for offline support + installability (Phase 5). Bump CACHE when the asset
 // list below changes meaningfully, so returning users pick up the new files instead of stale ones.
-const CACHE = 'leantrack-v7'; // bumped: Phase 7 (water/meal reminders + Add to Calendar), 15 new meals
+const CACHE = 'leantrack-v8'; // bumped: toast confirmation when a food is added
 const ASSETS = [
   './',
   './index.html',

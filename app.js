@@ -48,6 +48,15 @@ function startOfWeek(dateStr) {
   return shiftDay(dateStr, -((d.getDay() + 6) % 7));
 }
 const round = (n, p = 0) => { const m = 10 ** p; return Math.round(n * m) / m; };
+// Brief confirmation bubble (e.g. "Added Banana to Breakfast") — gives visible feedback for
+// actions like logging a food that otherwise only change things lower on the page.
+let toastTimer = null;
+function showToast(msg) {
+  const el = $('#toast');
+  el.textContent = msg; el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.hidden = true; }, 1800);
+}
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const units = () => (state.profile?.units || 'imperial');
 const wUnit = () => (units() === 'imperial' ? 'lb' : 'kg');
@@ -220,6 +229,7 @@ $('#waterMinus').onclick = () => { state.water[viewDate] = Math.max(0, (state.wa
 function addEntry(food, meal) {
   (state.log[viewDate] ||= []).push({ id: crypto.randomUUID(), meal, name: food.n + (food.s ? ` (${food.s})` : ''), cal: food.cal, p: food.p || 0, c: food.c || 0, f: food.f || 0 });
   save(); render();
+  showToast(`Added ${food.n} to ${meal}`);
 }
 
 // Online search is additive: local results render instantly and always work offline;
@@ -297,10 +307,17 @@ function scheduleOnlineSearch(q) {
 $('#foodSearch').addEventListener('input', () => { renderResultsList(); scheduleOnlineSearch($('#foodSearch').value); });
 $('#foodResults').addEventListener('click', e => {
   const i = e.target.dataset.add, oi = e.target.dataset.online, fk = e.target.dataset.addFav, star = e.target.dataset.favtoggle;
-  if (star !== undefined) { toggleFavorite(star); renderResultsList(); }
-  else if (i !== undefined) addEntry([...state.custom, ...FOODS][+i], $('#mealSel').value);
-  else if (oi !== undefined) addEntry(onlineResults[+oi], $('#mealSel').value);
-  else if (fk !== undefined) addEntry(foodPool.get(fk), $('#mealSel').value);
+  if (star !== undefined) { toggleFavorite(star); renderResultsList(); return; }
+  let food = null;
+  if (i !== undefined) food = [...state.custom, ...FOODS][+i];
+  else if (oi !== undefined) food = onlineResults[+oi];
+  else if (fk !== undefined) food = foodPool.get(fk);
+  if (!food) return;
+  addEntry(food, $('#mealSel').value);
+  // Clear the just-used search so the result isn't still sitting on screen looking unclicked —
+  // an empty search naturally falls back to the Favorites shortcut list.
+  if (i !== undefined || oi !== undefined) { $('#foodSearch').value = ''; onlineResults = []; onlineStatus = ''; }
+  renderResultsList();
 });
 
 // ---- Barcode lookup & camera scan (Phase 1) ----
@@ -333,6 +350,8 @@ $('#barcodeResult').addEventListener('click', e => {
   if (star !== undefined) { toggleFavorite(star); renderBarcodeResult(''); return; }
   if (e.target.dataset.barcodeAdd === undefined) return;
   addEntry(barcodeResult, $('#mealSel').value);
+  // Clear the result + typed code so it doesn't look like the tap didn't register.
+  barcodeResult = null; $('#barcodeIn').value = ''; renderBarcodeResult('');
 });
 
 // Camera scanning uses the ZXing JS barcode library (pure JS decoding from camera frames) instead
