@@ -78,6 +78,30 @@ A running log of smaller UX fixes made from real usage, outside the phase number
 - Requires restructuring meal data: every ingredient needs its own per-serving nutrition (calories/protein/carbs/fat), so a meal's totals become the *sum* of its current ingredients rather than a fixed stated number. This is a real data model change across all 39 meals, not a small addition — planned as its own phase rather than squeezed in alongside smaller fixes.
 - Rough shape: each ingredient gets a nutrition entry (reusing/extending the existing `FOODS` data where possible so there's one source of truth, not two); a "Swap" picker on a meal (in Meal ideas and/or the Planner) lets you replace one ingredient with another food of the same rough category; the meal's displayed cal/p/c/f recompute live from the ingredient list. Needs a decision on where the swap lives (just when logging it that day vs. a saved personal variant of the meal) — to be worked out when this phase starts.
 
+## Phase 9 — Gym workout log (sets, reps, weight)
+- User-requested: a proper strength-training log, not just the quick-add "Gym (30 min)" button from Phase 2. Pick an exercise from a categorized library (Legs, Back, Chest, Shoulders, Biceps, Triceps, Core, Cardio), log each set's reps and weight, and have calories factor back into the day's budget like everything else.
+- **Scope decided with the user:**
+  - Weight is tracked per set, not just once per exercise — a pyramid set like 10 reps @ 135 lb, 8 @ 145 lb, 6 @ 155 lb needs to record each set's own weight.
+  - Logging a workout here **does** add an estimated calorie burn into the day's budget, the same way existing Activity entries do.
+  - The exercise library is a **starting set of built-ins plus custom exercises** — same "built-in list + add your own" pattern as foods and activities already use.
+
+### Data model
+- New `GYM_EXERCISES` list in `data.js`: `{ n: name, cat: category, met }`, grouped under categories (Legs, Back, Chest, Shoulders, Biceps, Triceps, Core, Cardio), ~5–6 exercises per category to start (e.g. Legs: Squat, Lunge, Leg Press, Leg Curl, Calf Raise). `met` is a reasonable default per exercise for the calorie estimate below — approximate, like every other calorie number in this app.
+- `state.customExercises`: user-added exercises, `{ n, cat }`, same shape as built-ins so they can be searched/filtered together — mirrors `state.custom` for foods.
+- `state.gym[date]`: array of exercise blocks logged that day: `{ id, exercise, cat, sets: [{ reps, weight }, ...] }`. One block per exercise per session; a block can have any number of sets, each with its own reps and weight.
+
+### Calorie estimate
+- No separate "how long did this take" field — duration is estimated from set count (roughly 2 minutes per set, covering both the working set and rest between sets), fed into the existing MET formula from Phase 2 (`kcal = MET × 3.5 × weightKg / 200 × minutes`).
+- Each day's total gym calories/minutes are synced into `state.activities[date]` as a single rolled-up entry (stable id like `gym-<date>` that gets replaced, not duplicated, whenever that day's gym log changes) — this means it automatically shows up in the existing Activity list, the daily calorie ring/budget, and the Progress tab's weekly activity chart with no changes needed to that code. The detailed set-by-set breakdown (reps/weight) lives only in the new Gym tab.
+
+### UI
+- New **Gym** tab on the bottom nav (6th tab). A day navigator like Today's, then category chips to filter the exercise library, then tapping an exercise opens a simple set-entry form (reps + weight, "Add set" to append, each set editable/removable) and a "Save" that commits the block for the day.
+- Logged exercises for the day show as cards: exercise name + category, each set listed ("Set 1: 10 reps @ 135 lb"), with a simple total volume stat (Σ reps × weight) per exercise.
+- "+ Add custom exercise" (name + category) alongside the built-in library, same spot/pattern as other custom-entry forms in the app.
+- Possible stretch addition once the core log exists: a small weekly volume/workout-count chart on the Progress tab, reusing the existing bar-chart helper.
+
+**Not decided yet (to work out when this phase starts):** exact starting exercise list per category, and whether weight should default to the unit system already set in Profile (lb/kg) — almost certainly yes, reusing `state.profile.units`, just confirming before building.
+
 ---
 
 ## Parked ideas (not being built right now)
@@ -85,6 +109,6 @@ A running log of smaller UX fixes made from real usage, outside the phase number
 
 ---
 
-**Order:** 1 → 2 → 3 → 4 → 5 → 6 → 7, each phase shippable and testable before moving to the next.
+**Order:** 1 → 2 → 3 → 4 → 5 → 6 → 7, each phase shippable and testable before moving to the next. Phases 8–9 are planned but not yet ordered against each other — whichever you want first.
 
-**Status:** Phases 1–7 done. Phase 8 planned, not started.
+**Status:** Phases 1–7 done. Phases 8–9 planned, not started.
