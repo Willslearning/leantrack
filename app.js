@@ -174,15 +174,12 @@ function renderToday() {
   ring.style.strokeDashoffset = 326.7 * (1 - Math.min(1, t.cal / budget));
   ring.classList.toggle('over', left < 0);
 
-  const box = $('#logList'); box.innerHTML = '';
-  ['Breakfast', 'Lunch', 'Dinner', 'Snack'].forEach(m => {
-    const mi = items.filter(i => i.meal === m); if (!mi.length) return;
-    const g = document.createElement('div'); g.className = 'meal-group';
-    g.innerHTML = `<h3><span>${m}</span><span>${round(totals(mi).cal)} cal</span></h3><div class="card"><ul class="results">${
-      mi.map(i => `<li><div>${esc(i.name)}<small>${round(i.cal)} cal · P ${round(i.p)} C ${round(i.c)} F ${round(i.f)}</small></div>
-        <button class="del" data-del="${i.id}" aria-label="Remove">✕</button></li>`).join('')}</ul></div>`;
-    box.appendChild(g);
-  });
+  // Flat chronological list (oldest first) instead of grouping by meal type — the time each item
+  // was logged is shown in place of a meal-category label.
+  const ordered = [...items].sort((a, b) => (a.time || 0) - (b.time || 0));
+  $('#logList').innerHTML = ordered.length ? `<div class="card"><ul class="results">${
+    ordered.map(i => `<li><div>${esc(i.name)}<small>${formatTime(i.time)}${i.time ? ' · ' : ''}${round(i.cal)} cal · P ${round(i.p)} C ${round(i.c)} F ${round(i.f)}</small></div>
+      <button class="del" data-del="${i.id}" aria-label="Remove">✕</button></li>`).join('')}</ul></div>` : '';
   renderActivity();
   renderWater();
   renderResultsList();
@@ -228,11 +225,14 @@ function renderWater() {
 $('#waterPlus').onclick = () => { state.water[viewDate] = (state.water[viewDate] || 0) + 1; save(); renderWater(); };
 $('#waterMinus').onclick = () => { state.water[viewDate] = Math.max(0, (state.water[viewDate] || 0) - 1); save(); renderWater(); };
 
-function addEntry(food, meal) {
-  (state.log[viewDate] ||= []).push({ id: crypto.randomUUID(), meal, name: food.n + (food.s ? ` (${food.s})` : ''), cal: food.cal, p: food.p || 0, c: food.c || 0, f: food.f || 0 });
+function addEntry(food) {
+  // No meal-type category — just logged with the real clock time it was added, shown next to it
+  // in the list (the day it belongs to is already implied by which day you're viewing).
+  (state.log[viewDate] ||= []).push({ id: crypto.randomUUID(), time: Date.now(), name: food.n + (food.s ? ` (${food.s})` : ''), cal: food.cal, p: food.p || 0, c: food.c || 0, f: food.f || 0 });
   save(); render();
-  showToast(`Added ${food.n} to ${meal}`);
+  showToast(`Added ${food.n}`);
 }
+const formatTime = ts => ts ? new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
 
 // Online search is additive: local results render instantly and always work offline;
 // Open Food Facts results are merged in once (if) the network call succeeds.
@@ -315,7 +315,7 @@ $('#foodResults').addEventListener('click', e => {
   else if (oi !== undefined) food = onlineResults[+oi];
   else if (fk !== undefined) food = foodPool.get(fk);
   if (!food) return;
-  addEntry(food, $('#mealSel').value);
+  addEntry(food);
   // Clear the just-used search so the result isn't still sitting on screen looking unclicked —
   // an empty search naturally falls back to the Favorites shortcut list.
   if (i !== undefined || oi !== undefined) { $('#foodSearch').value = ''; onlineResults = []; onlineStatus = ''; }
@@ -351,7 +351,7 @@ $('#barcodeResult').addEventListener('click', e => {
   const star = e.target.dataset.favtoggle;
   if (star !== undefined) { toggleFavorite(star); renderBarcodeResult(''); return; }
   if (e.target.dataset.barcodeAdd === undefined) return;
-  addEntry(barcodeResult, $('#mealSel').value);
+  addEntry(barcodeResult);
   // Clear the result + typed code so it doesn't look like the tap didn't register.
   barcodeResult = null; $('#barcodeIn').value = ''; renderBarcodeResult('');
 });
@@ -434,7 +434,7 @@ $('#customForm').addEventListener('submit', e => {
   e.preventDefault();
   const f = Object.fromEntries(new FormData(e.target));
   const food = { n: f.name.trim(), s: f.serving.trim(), cal: +f.cal, p: +f.p || 0, c: +f.c || 0, f: +f.f || 0 };
-  state.custom.unshift(food); addEntry(food, $('#mealSel').value); e.target.reset();
+  state.custom.unshift(food); addEntry(food); e.target.reset();
 });
 
 // ---------- MEALS ----------
@@ -463,7 +463,7 @@ $('#mealList').addEventListener('click', e => {
   const i = e.target.dataset.meal; if (i === undefined) return;
   const m = MEALS[+i];
   viewDate = todayStr();
-  addEntry({ n: m.n, cal: m.cal, p: m.p, c: m.c, f: m.f }, m.type);
+  addEntry({ n: m.n, cal: m.cal, p: m.p, c: m.c, f: m.f });
   showTab('today');
 });
 

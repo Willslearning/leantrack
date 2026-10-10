@@ -64,6 +64,14 @@ Bumped the service worker's cache name (`leantrack-v2` in [sw.js](sw.js)) since 
 
 Also added 15 more meal ideas (24 → 39) per user feedback asking for more variety, in the same structured-ingredient format the Planner/shopping list depend on.
 
+## Usability refinements (post-launch feedback)
+A running log of smaller UX fixes made from real usage, outside the phase numbering above:
+- **Confirmation toast.** Tapping "Add" on a food gave no visible feedback — added a brief "Added X" bubble, and the search/barcode result now clears after adding so it doesn't look stuck.
+- **Bottom tab bar.** Moved navigation from the top header to a fixed bottom tab bar with icons — the standard mobile-app pattern, especially relevant once installed as a PWA. (Shipped with a real bug: the icon/label inside each button broke the click handler, since `e.target` was the inner element, not the button; fixed with `closest()`.)
+- **Dropped meal-type categories from the Today log.** "Add food" no longer asks you to pick Breakfast/Lunch/Dinner/Snack — it's just a search box. Logged items now show the real clock time they were added instead, in one flat chronological list rather than grouped sections. (Meal *type* still exists for the 39 meal ideas themselves and the Planner's meal-slot dropdowns — this change only affects how your own logged food entries are organized.)
+- **Better barcode scanning.** Added ZXing's "try harder" decode mode, higher camera resolution + continuous autofocus, and an on-screen tip, since curved cans/bottles are the most common real-world scan failure. Also fixed the camera not releasing (staying "recording") after a scan.
+- **Favorites.** Star any food to save it; starred foods show up as a one-tap list the moment "Add food" is opened with an empty search, so a specific product never needs re-searching or re-scanning.
+
 ## Phase 8 — Meal ingredient substitution
 - User-requested: swap an ingredient in a meal idea (e.g. can't eat peppers → swap in lettuce) and have the meal's calories/macros actually recalculate, not just the ingredient list changing cosmetically.
 - Requires restructuring meal data: every ingredient needs its own per-serving nutrition (calories/protein/carbs/fat), so a meal's totals become the *sum* of its current ingredients rather than a fixed stated number. This is a real data model change across all 39 meals, not a small addition — planned as its own phase rather than squeezed in alongside smaller fixes.

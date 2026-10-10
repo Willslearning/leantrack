@@ -52,8 +52,6 @@ button.danger{color:var(--danger);border-color:var(--danger)}
 .li-actions{display:flex;align-items:center;gap:2px;flex-shrink:0}
 .results button{padding:5px 12px}
 details{margin-top:10px}summary{cursor:pointer;color:var(--accent)}
-.meal-group h3{margin:14px 0 4px;font-size:.9rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:flex;justify-content:space-between}
-.meal-group .card{padding:4px 16px;margin-bottom:0}
 .del{border:0;background:none;color:var(--muted);padding:4px 8px}
 .fav-btn{border:0;background:none;color:var(--muted);padding:4px 6px;font-size:1.05rem;line-height:1}
 .fav-btn.on{color:#e0b84a}
