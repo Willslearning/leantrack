@@ -130,8 +130,10 @@ function activityStreak() {
 
 // ---------- tabs ----------
 $('#tabs').addEventListener('click', e => {
-  const t = e.target.dataset.tab; if (!t) return;
-  showTab(t);
+  // closest(), not e.target directly: the icon/label inside each button are what you actually
+  // click most of the time, and only the <button> itself carries data-tab.
+  const btn = e.target.closest('button[data-tab]'); if (!btn) return;
+  showTab(btn.dataset.tab);
 });
 function showTab(t) {
   $$('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
