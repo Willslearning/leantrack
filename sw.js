@@ -1,6 +1,6 @@
 // Service worker for offline support + installability (Phase 5). Bump CACHE when the asset
 // list below changes meaningfully, so returning users pick up the new files instead of stale ones.
-const CACHE = 'leantrack-v16'; // bumped: UI decluttering - 5-tab bottom nav + More hub, collapsible Profile sections
+const CACHE = 'leantrack-v17'; // bumped: taller bottom nav buttons for easier tapping
 const ASSETS = [
   './',
   './index.html',
