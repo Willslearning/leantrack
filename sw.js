@@ -1,6 +1,6 @@
 // Service worker for offline support + installability (Phase 5). Bump CACHE when the asset
 // list below changes meaningfully, so returning users pick up the new files instead of stale ones.
-const CACHE = 'leantrack-v18'; // bumped: swapped Gym (now primary) and Profile (now under More)
+const CACHE = 'leantrack-v19'; // bumped: Today renamed to Home + trimmed to quick-glance only
 const ASSETS = [
   './',
   './index.html',

@@ -55,18 +55,6 @@
         </button>
       </div>
       <ul id="foodResults" class="results"></ul>
-      <details>
-        <summary>Add a custom food</summary>
-        <form id="customForm" class="grid">
-          <input name="name" placeholder="Name" required>
-          <input name="serving" placeholder="Serving (e.g. 1 cup)">
-          <input name="cal" type="number" min="0" placeholder="Calories" required>
-          <input name="p" type="number" min="0" step="0.1" placeholder="Protein g">
-          <input name="c" type="number" min="0" step="0.1" placeholder="Carbs g">
-          <input name="f" type="number" min="0" step="0.1" placeholder="Fat g">
-          <button class="primary">Save &amp; add</button>
-        </form>
-      </details>
     </div>
 
     <div id="logList"></div>
@@ -74,15 +62,6 @@
     <div class="card">
       <h2>Activity</h2>
       <div class="chips" id="activityQuick"></div>
-      <details>
-        <summary>Add a custom activity</summary>
-        <form id="activityForm" class="grid">
-          <select name="type" id="activityType"></select>
-          <input name="mins" type="number" min="1" placeholder="Minutes" value="30" required>
-          <input name="cal" type="number" min="0" placeholder="Calories burned (optional, auto-estimated)">
-          <button class="primary">Add</button>
-        </form>
-      </details>
       <ul id="activityList" class="results"></ul>
       <div class="row water-row">
         <span class="muted small">Water</span>
@@ -100,6 +79,20 @@
       <p class="muted" id="mealHint"></p>
       <div class="chips" id="mealFilters"></div>
     </div>
+    <details class="settings-section">
+      <summary><h2>Add your own food</h2></summary>
+      <div class="details-body">
+        <form id="customForm" class="grid">
+          <input name="name" placeholder="Name" required>
+          <input name="serving" placeholder="Serving (e.g. 1 cup)">
+          <input name="cal" type="number" min="0" placeholder="Calories" required>
+          <input name="p" type="number" min="0" step="0.1" placeholder="Protein g">
+          <input name="c" type="number" min="0" step="0.1" placeholder="Carbs g">
+          <input name="f" type="number" min="0" step="0.1" placeholder="Fat g">
+          <button class="primary">Save &amp; add to today</button>
+        </form>
+      </div>
+    </details>
     <div id="mealList" class="meal-grid"></div>
   </section>
 
@@ -158,6 +151,19 @@
         </form>
       </details>
     </div>
+
+    <details class="settings-section">
+      <summary><h2>Quick activity (cardio, walk, etc.)</h2></summary>
+      <div class="details-body">
+        <form id="activityForm" class="grid">
+          <select name="type" id="activityType"></select>
+          <input name="mins" type="number" min="1" placeholder="Minutes" value="30" required>
+          <input name="cal" type="number" min="0" placeholder="Calories burned (optional, auto-estimated)">
+          <button class="primary">Add</button>
+        </form>
+        <p class="muted small">For cardio/walks — for weight training, use the exercise library above instead.</p>
+      </div>
+    </details>
 
     <div class="card" id="setEntryCard" hidden>
       <h2 id="setEntryTitle"></h2>
@@ -289,7 +295,7 @@
 <nav id="tabs" class="bottom-nav">
   <button data-tab="today" class="active">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3a9 9 0 1 0 9 9"/></svg>
-    <span>Today</span>
+    <span>Home</span>
   </button>
   <button data-tab="meals">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2v7a1.5 1.5 0 0 0 3 0V2M8.5 9v13M16.5 2c-1.8 2.5-1.8 6 0 8 .7.8.7 1 .7 2v9"/></svg>

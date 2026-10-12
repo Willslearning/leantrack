@@ -124,6 +124,8 @@ function estimateBurn(met, mins) {
 function addActivity(type, mins, cal) {
   (state.activities[viewDate] ||= []).push({ id: crypto.randomUUID(), type, mins, cal });
   save(); render();
+  showToast(`Logged ${type}`); // the custom-activity form lives on the Gym tab now, away from
+  // Home's activity list, so this is the only confirmation visible from there
 }
 function activityStreak() {
   let n = 0, d = todayStr();
@@ -467,7 +469,12 @@ $('#customForm').addEventListener('submit', e => {
   e.preventDefault();
   const f = Object.fromEntries(new FormData(e.target));
   const food = { n: f.name.trim(), s: f.serving.trim(), cal: +f.cal, p: +f.p || 0, c: +f.c || 0, f: +f.f || 0 };
-  state.custom.unshift(food); addEntry(food); e.target.reset();
+  state.custom.unshift(food); e.target.reset();
+  // This form lives on the Meals tab now (away from the day it logs to) — jump to Home, same as
+  // "Log this meal", so saving it and seeing it land feels like one action, not two.
+  viewDate = todayStr();
+  addEntry(food);
+  showTab('today');
 });
 
 // ---------- MEALS ----------
