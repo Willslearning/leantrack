@@ -64,6 +64,9 @@ details{margin-top:10px}summary{cursor:pointer;color:var(--accent)}
 .tag{display:inline-block;font-size:.72rem;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 6px;margin-right:4px;color:var(--muted)}
 .meal-macros{font-size:.85rem;color:var(--muted)}
 .meal-grid .fits{color:var(--accent);font-size:.8rem;font-weight:600}
+.meal-desc{margin:0;font-size:.9rem}
+.swap-details{margin-top:4px}
+.swap-form{margin-top:8px;grid-template-columns:1fr}
 .result-box{background:var(--bg);border-radius:10px;padding:12px;font-size:.92rem}
 .result-box:empty{display:none}
 canvas{width:100%;height:auto;max-width:100%}

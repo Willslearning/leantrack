@@ -27,6 +27,93 @@ const ALLERGENS = {
 const NONVEG_KEYWORDS = ['chicken', 'turkey', 'beef', 'pork', 'bacon', 'ham', 'sausage', 'steak', 'lamb', 'shrimp', 'salmon', 'tuna', 'fish', 'meatball', 'burger', 'pepperoni'];
 const NONVEGAN_EXTRA_KEYWORDS = ['milk', 'cheese', 'yogurt', 'yoghurt', 'butter', 'cream', 'egg', 'honey', 'whey'];
 
+// Phase 8: per-ingredient nutrition, keyed by the exact name used in every meal's `ing` list.
+// Drives ingredient swapping — swapping an ingredient recalculates a meal's totals as a *delta*
+// (old meal total − old ingredient's nutrition + new ingredient's nutrition), not a full re-sum
+// from scratch. That keeps every existing meal's carefully-estimated totals untouched unless you
+// actually swap something in it, while still genuinely recalculating what you changed.
+// `s` = the serving size these numbers represent (matches how much of it a meal typically uses).
+const INGREDIENTS = {
+  // Dairy & Eggs
+  'Eggs': { cat: 'Dairy & Eggs', s: '1 large', cal: 72, p: 6, c: 0, f: 5 },
+  'Greek yogurt': { cat: 'Dairy & Eggs', s: '3/4 cup', cal: 100, p: 17, c: 6, f: 0 },
+  'Almond milk': { cat: 'Dairy & Eggs', s: '1 cup', cal: 30, p: 1, c: 1, f: 2.5 },
+  'Cottage cheese': { cat: 'Dairy & Eggs', s: '1/2 cup', cal: 90, p: 12, c: 5, f: 2.5 },
+  'Feta cheese': { cat: 'Dairy & Eggs', s: '1 oz', cal: 75, p: 4, c: 1.2, f: 6 },
+  // Produce
+  'Spinach': { cat: 'Produce', s: '2 cups', cal: 14, p: 1.7, c: 2, f: 0.2 },
+  'Bell pepper': { cat: 'Produce', s: '1 medium', cal: 31, p: 1, c: 7, f: 0.3 },
+  'Blueberries': { cat: 'Produce', s: '1 cup', cal: 84, p: 1, c: 21, f: 0.5 },
+  'Banana': { cat: 'Produce', s: '1 medium', cal: 105, p: 1.3, c: 27, f: 0.4 },
+  'Avocado': { cat: 'Produce', s: '1/2 medium', cal: 120, p: 1.5, c: 6, f: 11 },
+  'Strawberries': { cat: 'Produce', s: '1 cup', cal: 49, p: 1, c: 12, f: 0.5 },
+  'Mixed salad greens': { cat: 'Produce', s: '2 cups', cal: 20, p: 2, c: 4, f: 0.3 },
+  'Cucumber': { cat: 'Produce', s: '1 cup', cal: 16, p: 0.7, c: 4, f: 0.1 },
+  'Lemon': { cat: 'Produce', s: 'juice of 1', cal: 5, p: 0.2, c: 1.6, f: 0 },
+  'Celery': { cat: 'Produce', s: '1 cup', cal: 15, p: 0.7, c: 3, f: 0.2 },
+  'Romaine lettuce': { cat: 'Produce', s: '2 cups', cal: 8, p: 0.6, c: 1.5, f: 0.1 },
+  'Carrots': { cat: 'Produce', s: '1 medium', cal: 25, p: 0.6, c: 6, f: 0.1 },
+  'Tomatoes': { cat: 'Produce', s: '1 medium', cal: 22, p: 1.1, c: 4.8, f: 0.2 },
+  'Lime': { cat: 'Produce', s: 'juice of 1', cal: 20, p: 0.5, c: 7, f: 0.1 },
+  'Red onion': { cat: 'Produce', s: '1 medium', cal: 44, p: 1.2, c: 10, f: 0.1 },
+  'Broccoli': { cat: 'Produce', s: '1 cup', cal: 55, p: 3.7, c: 11, f: 0.6 },
+  'Sweet potato': { cat: 'Produce', s: '1 medium', cal: 112, p: 2, c: 26, f: 0 },
+  'Mixed stir-fry vegetables': { cat: 'Produce', s: '1 cup', cal: 50, p: 2, c: 10, f: 0.3 },
+  'Zucchini': { cat: 'Produce', s: '1 cup', cal: 20, p: 1.5, c: 4, f: 0.2 },
+  'Onion': { cat: 'Produce', s: '1 medium', cal: 44, p: 1.2, c: 10, f: 0.1 },
+  'Garlic': { cat: 'Produce', s: '1 clove', cal: 4, p: 0.2, c: 1, f: 0 },
+  'Ginger': { cat: 'Produce', s: '1 tsp', cal: 2, p: 0, c: 0.4, f: 0 },
+  'Apple': { cat: 'Produce', s: '1 medium', cal: 95, p: 0.5, c: 25, f: 0.3 },
+  'Lettuce': { cat: 'Produce', s: '2 cups', cal: 8, p: 0.6, c: 1.5, f: 0.1 },
+  'Corn': { cat: 'Produce', s: '1/3 cup', cal: 60, p: 2, c: 13, f: 0.5 },
+  'Asparagus': { cat: 'Produce', s: '1 cup', cal: 27, p: 3, c: 5, f: 0.2 },
+  'Pineapple': { cat: 'Produce', s: '1/2 cup', cal: 40, p: 0.5, c: 10, f: 0.1 },
+  // Grains & Bakery
+  'Whole wheat bread': { cat: 'Grains & Bakery', s: '1 slice', cal: 81, p: 4, c: 14, f: 1 },
+  'Whole wheat tortillas': { cat: 'Grains & Bakery', s: '1 medium', cal: 130, p: 4, c: 22, f: 3 },
+  'Whole wheat buns': { cat: 'Grains & Bakery', s: '1 bun', cal: 130, p: 5, c: 22, f: 2 },
+  'Whole wheat pasta': { cat: 'Grains & Bakery', s: '1 cup cooked', cal: 174, p: 7.5, c: 37, f: 1 },
+  'Rice cakes': { cat: 'Grains & Bakery', s: '1 cake', cal: 35, p: 0.7, c: 7.3, f: 0.3 },
+  // Pantry & Condiments
+  'Granola': { cat: 'Pantry & Condiments', s: '1/4 cup', cal: 130, p: 3, c: 20, f: 5 },
+  'Oats': { cat: 'Pantry & Condiments', s: '1 cup cooked', cal: 154, p: 6, c: 27, f: 3 },
+  'Chia seeds': { cat: 'Pantry & Condiments', s: '1 tbsp', cal: 60, p: 2, c: 5, f: 4 },
+  'Quinoa': { cat: 'Pantry & Condiments', s: '1 cup cooked', cal: 222, p: 8, c: 39, f: 4 },
+  'Olive oil': { cat: 'Pantry & Condiments', s: '1 tsp', cal: 40, p: 0, c: 0, f: 4.5 },
+  'Canned tuna': { cat: 'Pantry & Condiments', s: '1 can', cal: 120, p: 26, c: 0, f: 1 },
+  'Mustard': { cat: 'Pantry & Condiments', s: '1 tsp', cal: 5, p: 0.3, c: 0.5, f: 0.3 },
+  'Lentils': { cat: 'Pantry & Condiments', s: '1/2 cup cooked', cal: 115, p: 9, c: 20, f: 0.4 },
+  'Brown rice': { cat: 'Pantry & Condiments', s: '1 cup cooked', cal: 216, p: 5, c: 45, f: 2 },
+  'Black beans': { cat: 'Pantry & Condiments', s: '1/2 cup', cal: 114, p: 8, c: 20, f: 0.5 },
+  'Salsa': { cat: 'Pantry & Condiments', s: '2 tbsp', cal: 10, p: 0.4, c: 2.2, f: 0 },
+  'Chickpeas': { cat: 'Pantry & Condiments', s: '1/2 cup', cal: 135, p: 7, c: 22, f: 2 },
+  'Soy sauce': { cat: 'Pantry & Condiments', s: '1 tbsp', cal: 10, p: 1, c: 1, f: 0 },
+  'Kidney or black beans': { cat: 'Pantry & Condiments', s: '1/2 cup', cal: 114, p: 8, c: 20, f: 0.5 },
+  'Rice': { cat: 'Pantry & Condiments', s: '1 cup cooked', cal: 205, p: 4, c: 45, f: 0.4 },
+  'Marinara sauce': { cat: 'Pantry & Condiments', s: '1/2 cup', cal: 70, p: 2, c: 11, f: 2 },
+  'Peanut butter': { cat: 'Pantry & Condiments', s: '1 tbsp', cal: 94, p: 4, c: 3, f: 8 },
+  'Hummus': { cat: 'Pantry & Condiments', s: '2 tbsp', cal: 70, p: 2, c: 4, f: 5 },
+  'Almonds': { cat: 'Pantry & Condiments', s: '1 oz', cal: 164, p: 6, c: 6, f: 14 },
+  'Protein powder': { cat: 'Pantry & Condiments', s: '1 scoop', cal: 120, p: 24, c: 3, f: 1.5 },
+  'Walnuts': { cat: 'Pantry & Condiments', s: '1 oz', cal: 185, p: 4.3, c: 3.9, f: 18.5 },
+  'Sesame dressing': { cat: 'Pantry & Condiments', s: '1 tbsp', cal: 60, p: 0.5, c: 3, f: 5 },
+  'Almond butter': { cat: 'Pantry & Condiments', s: '1 tbsp', cal: 98, p: 3.4, c: 3, f: 9 },
+  'Dried cranberries': { cat: 'Pantry & Condiments', s: '2 tbsp', cal: 65, p: 0, c: 17, f: 0 },
+  'Dark chocolate chips': { cat: 'Pantry & Condiments', s: '1 tbsp', cal: 70, p: 1, c: 8, f: 4.5 },
+  // Protein
+  'Chicken breast': { cat: 'Protein', s: '4 oz', cal: 187, p: 35, c: 0, f: 4 },
+  'Turkey breast': { cat: 'Protein', s: '3 oz', cal: 90, p: 18, c: 2, f: 1 },
+  'Salmon': { cat: 'Protein', s: '4 oz', cal: 233, p: 25, c: 0, f: 14 },
+  'Ground turkey': { cat: 'Protein', s: '4 oz', cal: 170, p: 21, c: 0, f: 9 },
+  'Shrimp': { cat: 'Protein', s: '4 oz', cal: 112, p: 24, c: 1, f: 1 },
+  'Tofu': { cat: 'Protein', s: '4 oz', cal: 90, p: 10, c: 2, f: 5 },
+  'Lean ground beef': { cat: 'Protein', s: '4 oz', cal: 200, p: 23, c: 0, f: 11 },
+  'Lean beef strips': { cat: 'Protein', s: '4 oz', cal: 200, p: 23, c: 0, f: 11 },
+  'Cod': { cat: 'Protein', s: '4 oz', cal: 90, p: 20, c: 0, f: 1 },
+  // Frozen & Other
+  'Edamame': { cat: 'Frozen & Other', s: '1 cup', cal: 120, p: 11, c: 9, f: 5 },
+};
+
 // Approximate nutrition values (USDA-style averages). Fields: n=name, s=serving, cal, p/c/f = grams.
 const FOODS = [
   // Proteins

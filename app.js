@@ -16,6 +16,7 @@ function load() {
     plan: {}, shoppingChecked: {},
     diet: { type: 'none', avoid: [] }, // avoid: mix of ALLERGENS keys and free-text custom words
     favorites: [], // saved foods (any source) for one-tap re-adding without searching/scanning again
+    customMeals: [], // your own "swapped" meal variants (Phase 8), same shape as MEALS entries
     reminders: {
       walk: { label: 'Time for your walk', enabled: false, time: '08:00', days: [1, 2, 3, 4, 5], lastFired: null },
       water: { label: 'Drink water', enabled: false, time: '10:00', days: [0, 1, 2, 3, 4, 5, 6], lastFired: null },
@@ -461,6 +462,34 @@ $('#customForm').addEventListener('submit', e => {
 
 // ---------- MEALS ----------
 const TAGS = ['High protein', 'Low carb', 'Vegetarian', 'Vegan', 'Quick', 'Meal prep'];
+// Built-in meals plus your own saved "swapped" variants — kept as one function (not a cached
+// array) since state.customMeals can change at any time.
+const allMeals = () => [...MEALS, ...state.customMeals];
+
+// Phase 8: ingredient swapping. Recalculates a meal's totals as a *delta* — old meal total minus
+// the old ingredient's nutrition plus the new one's — rather than re-summing every ingredient from
+// scratch, so swapping one thing never drifts the rest of an already-curated meal's numbers.
+function swapOptionsHtml(oldIngName, selected) {
+  const cat = INGREDIENTS[oldIngName]?.cat;
+  const opts = Object.keys(INGREDIENTS).filter(n => n !== oldIngName && INGREDIENTS[n].cat === cat).sort();
+  if (!opts.length) return '<option value="">No alternatives available</option>';
+  return opts.map(n => `<option value="${esc(n)}" ${n === selected ? 'selected' : ''}>${esc(n)}</option>`).join('');
+}
+function makeMealVariant(meal, oldName, newName) {
+  const oldN = INGREDIENTS[oldName] || { cal: 0, p: 0, c: 0, f: 0 };
+  const newN = INGREDIENTS[newName] || { cal: 0, p: 0, c: 0, f: 0 };
+  return {
+    n: `${meal.n} (your version)`,
+    type: meal.type,
+    cal: Math.max(0, round(meal.cal - oldN.cal + newN.cal)),
+    p: Math.max(0, round(meal.p - oldN.p + newN.p, 1)),
+    c: Math.max(0, round(meal.c - oldN.c + newN.c, 1)),
+    f: Math.max(0, round(meal.f - oldN.f + newN.f, 1)),
+    tags: [...meal.tags],
+    d: `${meal.d} (swapped ${oldName} → ${newName})`,
+    ing: meal.ing.map(i => i.n === oldName ? { n: newName, cat: newN.cat || i.cat } : i),
+  };
+}
 function renderMeals() {
   const left = state.goal - totals(dayLog(todayStr())).cal;
   $('#mealHint').textContent = state.profile
@@ -468,22 +497,52 @@ function renderMeals() {
     : 'Set up your Profile to get a daily calorie goal and see which meals fit.';
   const f = $('#mealFilters');
   f.innerHTML = TAGS.map(t => `<button class="chip ${mealFilter.has(t) ? 'on' : ''}" data-tag="${t}">${t}</button>`).join('');
-  const meals = MEALS.filter(m => mealAllowed(m) && [...mealFilter].every(t => m.tags.includes(t)))
+  const all = allMeals();
+  const meals = all.filter(m => mealAllowed(m) && [...mealFilter].every(t => m.tags.includes(t)))
     .sort((a, b) => (b.cal <= left) - (a.cal <= left) || b.p / b.cal - a.p / a.cal);
-  $('#mealList').innerHTML = meals.map((m, i) => `<div class="card">
+  $('#mealList').innerHTML = meals.map(m => {
+    const firstIng = m.ing[0]?.n;
+    return `<div class="card">
     <h3>${esc(m.n)}</h3><div>${m.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
-    <p style="margin:0;font-size:.9rem">${esc(m.d)}</p>
+    <p class="meal-desc">${esc(m.d)}</p>
     <div class="meal-macros">${m.cal} cal · P ${m.p}g C ${m.c}g F ${m.f}g · ${m.type}</div>
     ${m.cal <= left ? '<div class="fits">Fits your day</div>' : ''}
-    <button data-meal="${MEALS.indexOf(m)}">Log this meal</button></div>`).join('') || '<p class="muted">No meals match those filters.</p>';
+    <button data-meal="${all.indexOf(m)}">Log this meal</button>
+    ${m.ing.length > 1 ? `<details class="swap-details">
+      <summary>Swap an ingredient</summary>
+      <form class="grid swap-form" data-meal-idx="${all.indexOf(m)}">
+        <select name="old">${m.ing.map(i => `<option value="${esc(i.n)}" ${i.n === firstIng ? 'selected' : ''}>${esc(i.n)}</option>`).join('')}</select>
+        <select name="new">${swapOptionsHtml(firstIng)}</select>
+        <button class="primary">Save as my version</button>
+      </form>
+    </details>` : ''}
+    </div>`;
+  }).join('') || '<p class="muted">No meals match those filters.</p>';
 }
 $('#mealFilters').addEventListener('click', e => {
   const t = e.target.dataset.tag; if (!t) return;
   mealFilter.has(t) ? mealFilter.delete(t) : mealFilter.add(t); renderMeals();
 });
+$('#mealList').addEventListener('change', e => {
+  if (e.target.name !== 'old') return;
+  const newSel = e.target.closest('.swap-form').querySelector('select[name=new]');
+  newSel.innerHTML = swapOptionsHtml(e.target.value);
+});
+$('#mealList').addEventListener('submit', e => {
+  if (!e.target.classList.contains('swap-form')) return;
+  e.preventDefault();
+  const form = e.target;
+  const meal = allMeals()[+form.dataset.mealIdx];
+  const oldName = form.old.value, newName = form.new.value;
+  if (!newName || oldName === newName) { showToast('Pick a different ingredient to swap in'); return; }
+  state.customMeals.push(makeMealVariant(meal, oldName, newName));
+  save();
+  showToast(`Saved your version of ${meal.n}`);
+  renderMeals();
+});
 $('#mealList').addEventListener('click', e => {
   const i = e.target.dataset.meal; if (i === undefined) return;
-  const m = MEALS[+i];
+  const m = allMeals()[+i];
   viewDate = todayStr();
   addEntry({ n: m.n, cal: m.cal, p: m.p, c: m.c, f: m.f });
   showTab('today');
@@ -492,7 +551,7 @@ $('#mealList').addEventListener('click', e => {
 // ---------- PLANNER ----------
 const PLAN_MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 const dayPlan = d => state.plan[d] || {};
-const mealByName = n => MEALS.find(m => m.n === n);
+const mealByName = n => allMeals().find(m => m.n === n);
 function renderPlanner() {
   const start = planWeekStart, end = shiftDay(start, 6);
   const fmt = d => new Date(d + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -508,7 +567,7 @@ function renderPlanner() {
       <h3>${label} <span class="plan-day-cal">${dayCal ? dayCal + ' cal planned' : ''}</span></h3>
       ${PLAN_MEAL_TYPES.map(t => `<div class="plan-row"><label>${t}</label>
         <select data-ptype="${t}"><option value="">— none —</option>
-        ${MEALS.filter(m => m.type === t && (mealAllowed(m) || plan[t] === m.n)).map(m => `<option value="${esc(m.n)}" ${plan[t] === m.n ? 'selected' : ''}>${esc(m.n)}</option>`).join('')}
+        ${allMeals().filter(m => m.type === t && (mealAllowed(m) || plan[t] === m.n)).map(m => `<option value="${esc(m.n)}" ${plan[t] === m.n ? 'selected' : ''}>${esc(m.n)}</option>`).join('')}
         </select></div>`).join('')}
     </div>`;
   }).join('');

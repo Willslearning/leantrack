@@ -73,10 +73,14 @@ A running log of smaller UX fixes made from real usage, outside the phase number
 - **Favorites.** Star any food to save it; starred foods show up as a one-tap list the moment "Add food" is opened with an empty search, so a specific product never needs re-searching or re-scanning.
 - **Barcode scan/entry moved into a modal.** The always-visible "Scan or enter a barcode" section is gone; a small camera-icon button next to the search box opens a modal that goes straight to the camera. If scanning can't happen for any reason (no camera, permission denied, offline so the scanner library can't load), it falls back to a manual UPC entry form automatically instead of a dead end — a "Can't scan?" link also offers that switch manually. Cancel (✕), clicking outside the modal, or Escape all close it; adding the found item closes it automatically too.
 
-## Phase 8 — Meal ingredient substitution
+## Phase 8 — Meal ingredient substitution ✅ Done
 - User-requested: swap an ingredient in a meal idea (e.g. can't eat peppers → swap in lettuce) and have the meal's calories/macros actually recalculate, not just the ingredient list changing cosmetically.
 - Requires restructuring meal data: every ingredient needs its own per-serving nutrition (calories/protein/carbs/fat), so a meal's totals become the *sum* of its current ingredients rather than a fixed stated number. This is a real data model change across all 39 meals, not a small addition — planned as its own phase rather than squeezed in alongside smaller fixes.
 - Rough shape: each ingredient gets a nutrition entry (reusing/extending the existing `FOODS` data where possible so there's one source of truth, not two); a "Swap" picker on a meal (in Meal ideas and/or the Planner) lets you replace one ingredient with another food of the same rough category; the meal's displayed cal/p/c/f recompute live from the ingredient list. Needs a decision on where the swap lives (just when logging it that day vs. a saved personal variant of the meal) — to be worked out when this phase starts.
+
+**Scope decided with the user:** swaps save as your own persistent variant of the meal (not a one-time thing), and the swap control lives on the Meal ideas tab.
+
+**Notes:** Added `INGREDIENTS` to `data.js` — nutrition data (serving size, cal/p/c/f, category) for all 72 unique ingredients used across the 39 meals. Recalculation is a **delta**, not a full ingredient re-sum: `new total = original meal total − old ingredient's nutrition + new ingredient's nutrition`. This was a deliberate choice over summing every ingredient from scratch — it keeps every existing meal's hand-curated totals exactly as they were unless you actually swap something in it, rather than risking small across-the-board drift from re-deriving numbers that were already good. Each meal card gets a "Swap an ingredient" control (same `<details>` pattern as "Add a custom food"/"Add a custom activity" elsewhere) with two dropdowns — which ingredient to replace, and what to replace it with, filtered to the same category (e.g. swapping a vegetable only offers other vegetables) — plus "Save as my version", which creates e.g. "Turkey chili (your version)" with recalculated totals. Saved variants live in `state.customMeals` and are merged into the full meal list everywhere (`allMeals()`) — they show up in Meal ideas, respect diet/allergy filtering exactly like built-in meals, and are also selectable in the Planner's meal-slot dropdowns for free, since that's one shared list now rather than a special case.
 
 ## Phase 9 — Gym workout log (sets, reps, weight)
 - User-requested: a proper strength-training log, not just the quick-add "Gym (30 min)" button from Phase 2. Pick an exercise from a categorized library (Legs, Back, Chest, Shoulders, Biceps, Triceps, Core, Cardio), log each set's reps and weight, and have calories factor back into the day's budget like everything else.
@@ -109,6 +113,6 @@ A running log of smaller UX fixes made from real usage, outside the phase number
 
 ---
 
-**Order:** 1 → 2 → 3 → 4 → 5 → 6 → 7, each phase shippable and testable before moving to the next. Phases 8–9 are planned but not yet ordered against each other — whichever you want first.
+**Order:** 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8, each phase shippable and testable before moving to the next.
 
-**Status:** Phases 1–7 done. Phases 8–9 planned, not started.
+**Status:** Phases 1–8 done. Phase 9 planned, not started.
