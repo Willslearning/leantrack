@@ -17,6 +17,8 @@ function load() {
     diet: { type: 'none', avoid: [] }, // avoid: mix of ALLERGENS keys and free-text custom words
     favorites: [], // saved foods (any source) for one-tap re-adding without searching/scanning again
     customMeals: [], // your own "swapped" meal variants (Phase 8), same shape as MEALS entries
+    customExercises: [], // user-added gym exercises (Phase 9), same shape as GYM_EXERCISES entries
+    gym: {}, // gym[date] = [{ id, exercise, cat, unit, sets: [{reps, weight}] }]
     reminders: {
       walk: { label: 'Time for your walk', enabled: false, time: '08:00', days: [1, 2, 3, 4, 5], lastFired: null },
       water: { label: 'Drink water', enabled: false, time: '10:00', days: [0, 1, 2, 3, 4, 5, 6], lastFired: null },
@@ -622,6 +624,127 @@ $('#shoppingList').addEventListener('change', e => {
   e.target.closest('.shop-item').classList.toggle('checked', e.target.checked);
 });
 
+// ---------- GYM (Phase 9) ----------
+const allExercises = () => [...GYM_EXERCISES, ...state.customExercises];
+const exerciseMet = name => allExercises().find(e => e.n === name)?.met || 4;
+const dayGym = d => state.gym[d] || [];
+// Shares the same day cursor as Today/Activity/Water — one "day" concept across the app.
+let gymCatFilter = 'All';
+let gymDraft = null; // { exercise, cat, unit, sets: [] } while building one exercise's sets
+
+// Rolls a day's total estimated gym calories/minutes into the existing Activity log as a single
+// entry (replaced, not duplicated, each time) — reuses all the existing budget/Progress-chart math
+// with no changes needed there. Duration is estimated at ~2 min/set (work + rest), same spirit as
+// the MET formula already used for quick-add activities.
+function syncGymActivity(date) {
+  const blocks = dayGym(date);
+  const kept = (state.activities[date] || []).filter(a => a.id !== `gym-${date}`);
+  if (blocks.length) {
+    let mins = 0, cal = 0;
+    for (const b of blocks) {
+      const m = b.sets.length * 2;
+      mins += m;
+      cal += estimateBurn(exerciseMet(b.exercise), m);
+    }
+    kept.push({ id: `gym-${date}`, type: 'Strength training', mins, cal });
+  }
+  state.activities[date] = kept;
+}
+
+function renderGym() {
+  $('#gymDateLabel').textContent = viewDate === todayStr() ? 'Today' :
+    new Date(viewDate + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  $('#gymNextDay').disabled = viewDate >= todayStr();
+
+  $('#gymCatFilters').innerHTML = ['All', ...GYM_CATS].map(c =>
+    `<button class="chip ${gymCatFilter === c ? 'on' : ''}" data-gymcat="${esc(c)}">${esc(c)}</button>`).join('');
+
+  const sel = $('#gymExerciseSel');
+  const prevValue = sel.value;
+  const list = allExercises().filter(e => gymCatFilter === 'All' || e.cat === gymCatFilter);
+  const byCat = {};
+  list.forEach(e => (byCat[e.cat] ||= []).push(e));
+  sel.innerHTML = '<option value="">Choose an exercise…</option>' + GYM_CATS.filter(c => byCat[c]).map(c =>
+    `<optgroup label="${esc(c)}">${byCat[c].map(e => `<option value="${esc(e.n)}">${esc(e.n)}</option>`).join('')}</optgroup>`).join('');
+  if (list.some(e => e.n === prevValue)) sel.value = prevValue;
+
+  if (!$('#customExerciseCat').options.length) $('#customExerciseCat').innerHTML = GYM_CATS.map(c => `<option>${esc(c)}</option>`).join('');
+
+  renderSetEntry();
+  renderGymLog();
+}
+function renderSetEntry() {
+  $('#setEntryCard').hidden = !gymDraft;
+  if (!gymDraft) return;
+  $('#setEntryTitle').textContent = gymDraft.exercise;
+  $('#setWeightUnit').textContent = `(${wUnit()})`;
+  $('#currentSetsList').innerHTML = gymDraft.sets.map((s, i) =>
+    `<li><div>Set ${i + 1}<small>${s.reps} reps${s.weight ? ` · ${s.weight} ${gymDraft.unit}` : ''}</small></div>
+      <button class="del" data-setdel="${i}" aria-label="Remove">✕</button></li>`).join('');
+}
+function renderGymLog() {
+  const blocks = dayGym(viewDate);
+  $('#gymLogList').innerHTML = blocks.map(b => {
+    const vol = b.sets.reduce((s, x) => s + x.reps * (x.weight || 0), 0);
+    return `<div class="card">
+      <h3>${esc(b.exercise)} <span class="tag">${esc(b.cat)}</span></h3>
+      <ul class="results">${b.sets.map((s, i) => `<li><div>Set ${i + 1}<small>${s.reps} reps${s.weight ? ` · ${s.weight} ${b.unit}` : ''}</small></div></li>`).join('')}</ul>
+      ${vol ? `<div class="meal-macros">Total volume: ${round(vol)} ${b.unit}</div>` : ''}
+      <button class="del" data-gymdel="${b.id}" aria-label="Remove exercise">✕ Remove</button>
+    </div>`;
+  }).join('');
+}
+$('#gymPrevDay').onclick = () => { viewDate = shiftDay(viewDate, -1); gymDraft = null; render(); };
+$('#gymNextDay').onclick = () => { if (viewDate < todayStr()) { viewDate = shiftDay(viewDate, 1); gymDraft = null; render(); } };
+$('#gymCatFilters').addEventListener('click', e => {
+  const c = e.target.dataset.gymcat; if (!c) return;
+  gymCatFilter = c; renderGym();
+});
+$('#gymExerciseSel').addEventListener('change', e => {
+  const name = e.target.value;
+  if (!name) { gymDraft = null; renderSetEntry(); return; }
+  const ex = allExercises().find(x => x.n === name);
+  gymDraft = { exercise: name, cat: ex.cat, unit: wUnit(), sets: [] };
+  renderSetEntry();
+});
+$('#addSetBtn').addEventListener('click', () => {
+  const reps = +$('#setReps').value, weight = +$('#setWeight').value || 0;
+  if (!gymDraft || !reps || reps < 1) { showToast('Enter how many reps'); return; }
+  gymDraft.sets.push({ reps, weight });
+  $('#setReps').value = ''; $('#setWeight').value = '';
+  renderSetEntry();
+});
+$('#currentSetsList').addEventListener('click', e => {
+  const i = e.target.dataset.setdel; if (i === undefined || !gymDraft) return;
+  gymDraft.sets.splice(+i, 1); renderSetEntry();
+});
+$('#saveExerciseBtn').addEventListener('click', () => {
+  if (!gymDraft || !gymDraft.sets.length) { showToast('Add at least one set first'); return; }
+  (state.gym[viewDate] ||= []).push({ id: crypto.randomUUID(), exercise: gymDraft.exercise, cat: gymDraft.cat, unit: gymDraft.unit, sets: gymDraft.sets });
+  syncGymActivity(viewDate); save();
+  showToast(`Saved ${gymDraft.exercise}`);
+  gymDraft = null;
+  $('#gymExerciseSel').value = '';
+  renderGym();
+});
+$('#cancelExerciseBtn').addEventListener('click', () => {
+  gymDraft = null; $('#gymExerciseSel').value = ''; renderSetEntry();
+});
+$('#gymLogList').addEventListener('click', e => {
+  const id = e.target.dataset.gymdel; if (!id) return;
+  state.gym[viewDate] = dayGym(viewDate).filter(b => b.id !== id);
+  syncGymActivity(viewDate); save(); renderGym();
+});
+$('#customExerciseForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const f = Object.fromEntries(new FormData(e.target));
+  const name = f.name.trim(); if (!name) return;
+  state.customExercises.push({ n: name, cat: f.cat, met: 4.5 }); // reasonable generic default MET
+  save(); e.target.reset();
+  renderGym();
+  $('#gymExerciseSel').value = name; $('#gymExerciseSel').dispatchEvent(new Event('change'));
+});
+
 // ---------- PROGRESS ----------
 $('#weightForm').addEventListener('submit', e => {
   e.preventDefault();
@@ -914,6 +1037,6 @@ $('#installBtn').addEventListener('click', async () => {
 // ---------- render ----------
 function render() {
   const t = $$('#tabs button').find(b => b.classList.contains('active')).dataset.tab;
-  ({ today: renderToday, meals: renderMeals, planner: renderPlanner, progress: renderProgress, profile: renderProfile })[t]();
+  ({ today: renderToday, meals: renderMeals, planner: renderPlanner, gym: renderGym, progress: renderProgress, profile: renderProfile })[t]();
 }
 if (!state.profile) showTab('profile'); else render();

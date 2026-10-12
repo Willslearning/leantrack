@@ -82,7 +82,7 @@ A running log of smaller UX fixes made from real usage, outside the phase number
 
 **Notes:** Added `INGREDIENTS` to `data.js` — nutrition data (serving size, cal/p/c/f, category) for all 72 unique ingredients used across the 39 meals. Recalculation is a **delta**, not a full ingredient re-sum: `new total = original meal total − old ingredient's nutrition + new ingredient's nutrition`. This was a deliberate choice over summing every ingredient from scratch — it keeps every existing meal's hand-curated totals exactly as they were unless you actually swap something in it, rather than risking small across-the-board drift from re-deriving numbers that were already good. Each meal card gets a "Swap an ingredient" control (same `<details>` pattern as "Add a custom food"/"Add a custom activity" elsewhere) with two dropdowns — which ingredient to replace, and what to replace it with, filtered to the same category (e.g. swapping a vegetable only offers other vegetables) — plus "Save as my version", which creates e.g. "Turkey chili (your version)" with recalculated totals. Saved variants live in `state.customMeals` and are merged into the full meal list everywhere (`allMeals()`) — they show up in Meal ideas, respect diet/allergy filtering exactly like built-in meals, and are also selectable in the Planner's meal-slot dropdowns for free, since that's one shared list now rather than a special case.
 
-## Phase 9 — Gym workout log (sets, reps, weight)
+## Phase 9 — Gym workout log (sets, reps, weight) ✅ Done
 - User-requested: a proper strength-training log, not just the quick-add "Gym (30 min)" button from Phase 2. Pick an exercise from a categorized library (Legs, Back, Chest, Shoulders, Biceps, Triceps, Core, Cardio), log each set's reps and weight, and have calories factor back into the day's budget like everything else.
 - **Scope decided with the user:**
   - Weight is tracked per set, not just once per exercise — a pyramid set like 10 reps @ 135 lb, 8 @ 145 lb, 6 @ 155 lb needs to record each set's own weight.
@@ -104,7 +104,11 @@ A running log of smaller UX fixes made from real usage, outside the phase number
 - "+ Add custom exercise" (name + category) alongside the built-in library, same spot/pattern as other custom-entry forms in the app.
 - Possible stretch addition once the core log exists: a small weekly volume/workout-count chart on the Progress tab, reusing the existing bar-chart helper.
 
-**Not decided yet (to work out when this phase starts):** exact starting exercise list per category, and whether weight should default to the unit system already set in Profile (lb/kg) — almost certainly yes, reusing `state.profile.units`, just confirming before building.
+**Notes:** Built exactly as scoped, with one deliberate trim: **Cardio was dropped from the category list.** A sets/reps/weight model doesn't fit cardio ("3 sets of 10 reps" on a treadmill doesn't mean anything) — cardio already has its own quick-add buttons in the Activity section from Phase 2, so this stayed focused on the 7 muscle-group categories that were the actual ask (Legs, Back, Chest, Shoulders, Biceps, Triceps, Core), ~5 exercises each (34 total) to start. Weight does reuse whatever unit is set in Profile (`wUnit()`), stored per set so a later unit change in Profile doesn't retroactively reinterpret old entries.
+
+New **Gym** tab (bottom nav, 6th icon) shares the same day cursor as Today/Activity/Water — one "day" concept across the app, not a separate calendar to manage. Picking an exercise (grouped by category via `<optgroup>`, or filtered to one category with the chips) opens a set-entry card; "Add set" appends reps + weight to a running list (each removable before saving); "Save exercise" commits the whole block and rolls its estimated calories into the day's Activity log exactly as planned (one `gym-<date>` entry, replaced not duplicated, so it plays through the existing budget/ring and Progress chart with zero changes needed there). Logged exercises show as cards with every set listed and a total-volume stat (Σ reps × weight). Custom exercises (name + category, default MET 4.5) are auto-selected into the picker right after adding, ready to log immediately.
+
+**Known minor limitation:** the rolled-up "Strength training" Activity entry is regenerated from the Gym tab's data every time that day's gym log changes — if you manually delete it from Today's Activity list without touching Gym, it can reappear the next time you edit that day's workout. Deleting/editing from the Gym tab itself is the reliable way to change it.
 
 ---
 
@@ -113,6 +117,6 @@ A running log of smaller UX fixes made from real usage, outside the phase number
 
 ---
 
-**Order:** 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8, each phase shippable and testable before moving to the next.
+**Order:** 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9, each phase shippable and testable before moving to the next.
 
-**Status:** Phases 1–8 done. Phase 9 planned, not started.
+**Status:** Phases 1–9 done. No phases currently planned — see Parked ideas below for what's next if wanted.

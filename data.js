@@ -8,6 +8,56 @@ const ACTIVITIES = [
   { n: 'Custom', met: 4 }, // fallback for anything typed in manually without a calorie override
 ];
 
+// Phase 9: gym workout log. Categories kept to muscle-group strength training (what was asked
+// for) rather than folding in cardio, which doesn't fit a sets/reps/weight model well — cardio
+// already has its own quick-add buttons in the Activity section (Phase 2).
+// `met` is a reasonable default per exercise (compound lifts rate higher than isolation moves),
+// used the same way as ACTIVITIES: kcal = met * 3.5 * weightKg / 200 * minutes, with minutes
+// estimated from set count (~2 min/set, covering the working set plus rest).
+const GYM_CATS = ['Legs', 'Back', 'Chest', 'Shoulders', 'Biceps', 'Triceps', 'Core'];
+const GYM_EXERCISES = [
+  { n: 'Squat', cat: 'Legs', met: 6 },
+  { n: 'Lunge', cat: 'Legs', met: 6 },
+  { n: 'Leg Press', cat: 'Legs', met: 6 },
+  { n: 'Leg Curl', cat: 'Legs', met: 4 },
+  { n: 'Leg Extension', cat: 'Legs', met: 4 },
+  { n: 'Calf Raise', cat: 'Legs', met: 4 },
+
+  { n: 'Deadlift', cat: 'Back', met: 6 },
+  { n: 'Bent-over Row', cat: 'Back', met: 5.5 },
+  { n: 'Lat Pulldown', cat: 'Back', met: 5.5 },
+  { n: 'Pull-up', cat: 'Back', met: 5.5 },
+  { n: 'Seated Cable Row', cat: 'Back', met: 5.5 },
+
+  { n: 'Bench Press', cat: 'Chest', met: 6 },
+  { n: 'Incline Bench Press', cat: 'Chest', met: 6 },
+  { n: 'Dumbbell Press', cat: 'Chest', met: 6 },
+  { n: 'Push-up', cat: 'Chest', met: 4.5 },
+  { n: 'Chest Fly', cat: 'Chest', met: 4.5 },
+
+  { n: 'Overhead Press', cat: 'Shoulders', met: 5.5 },
+  { n: 'Arnold Press', cat: 'Shoulders', met: 5.5 },
+  { n: 'Lateral Raise', cat: 'Shoulders', met: 3.5 },
+  { n: 'Front Raise', cat: 'Shoulders', met: 3.5 },
+  { n: 'Shrugs', cat: 'Shoulders', met: 3.5 },
+
+  { n: 'Bicep Curl', cat: 'Biceps', met: 3.5 },
+  { n: 'Hammer Curl', cat: 'Biceps', met: 3.5 },
+  { n: 'Preacher Curl', cat: 'Biceps', met: 3.5 },
+  { n: 'Concentration Curl', cat: 'Biceps', met: 3.5 },
+
+  { n: 'Tricep Pushdown', cat: 'Triceps', met: 3.5 },
+  { n: 'Tricep Extension', cat: 'Triceps', met: 3.5 },
+  { n: 'Skull Crushers', cat: 'Triceps', met: 3.5 },
+  { n: 'Dips', cat: 'Triceps', met: 4.5 },
+
+  { n: 'Plank', cat: 'Core', met: 3.8 },
+  { n: 'Crunches', cat: 'Core', met: 3.8 },
+  { n: 'Russian Twist', cat: 'Core', met: 3.8 },
+  { n: 'Leg Raise', cat: 'Core', met: 3.8 },
+  { n: 'Mountain Climbers', cat: 'Core', met: 5 },
+];
+
 // Phase 6: diet type & allergy filtering.
 // ALLERGENS drives both the Profile checkboxes and the matching logic:
 //   - `keywords` are matched (best-effort, case-insensitive substring) against meal ingredient

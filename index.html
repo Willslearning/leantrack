@@ -121,6 +121,48 @@
     </div>
   </section>
 
+  <!-- GYM -->
+  <section id="tab-gym" hidden>
+    <div class="date-row">
+      <button id="gymPrevDay" aria-label="Previous day">‹</button>
+      <strong id="gymDateLabel"></strong>
+      <button id="gymNextDay" aria-label="Next day">›</button>
+    </div>
+
+    <div class="card">
+      <h2>Exercise library</h2>
+      <div class="chips" id="gymCatFilters"></div>
+      <select id="gymExerciseSel">
+        <option value="">Choose an exercise…</option>
+      </select>
+      <details>
+        <summary>Add a custom exercise</summary>
+        <form id="customExerciseForm" class="grid">
+          <input name="name" placeholder="Name" required>
+          <select name="cat" id="customExerciseCat"></select>
+          <button class="primary">Save</button>
+        </form>
+      </details>
+    </div>
+
+    <div class="card" id="setEntryCard" hidden>
+      <h2 id="setEntryTitle"></h2>
+      <div class="row">
+        <input id="setReps" type="number" min="1" placeholder="Reps">
+        <input id="setWeight" type="number" min="0" step="0.5" placeholder="Weight">
+        <span class="muted small" id="setWeightUnit"></span>
+      </div>
+      <button type="button" id="addSetBtn" class="primary">Add set</button>
+      <ul id="currentSetsList" class="results"></ul>
+      <div class="row">
+        <button type="button" id="saveExerciseBtn" class="primary">Save exercise</button>
+        <button type="button" id="cancelExerciseBtn">Cancel</button>
+      </div>
+    </div>
+
+    <div id="gymLogList"></div>
+  </section>
+
   <!-- PROGRESS -->
   <section id="tab-progress" hidden>
     <div class="card">
@@ -233,6 +275,10 @@
   <button data-tab="planner">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
     <span>Planner</span>
+  </button>
+  <button data-tab="gym">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8.5" y1="12" x2="15.5" y2="12"/><rect x="2" y="9" width="3" height="6" rx="1"/><rect x="19" y="9" width="3" height="6" rx="1"/><rect x="6" y="7" width="2.5" height="10" rx="1"/><rect x="15.5" y="7" width="2.5" height="10" rx="1"/></svg>
+    <span>Gym</span>
   </button>
   <button data-tab="progress">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l6-7 4 4 7-9"/><path d="M14 6h6v6"/></svg>
