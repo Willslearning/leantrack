@@ -112,6 +112,7 @@ New **Gym** tab (bottom nav, 6th icon) shares the same day cursor as Today/Activ
 
 ## Usability refinements (continued)
 - **Bottom nav decluttered.** 6 icons felt cramped — down to 5. Planner and Gym moved under a new **More** tab (a simple two-row menu), since they're used less often than Today/Meals/Progress/Profile. Each still works exactly as before; a "‹ More" link at the top of each gets you back. (Caught a real bug while building this: `render()` decided which tab to draw based on the bottom-nav button's highlight, but Planner/Gym no longer have their own button — it now reads the actually-visible `<section>` instead, which is more correct regardless.)
+- **Swapped Gym and Profile.** Gym gets used daily (logging sets), Profile is mostly set-once — so Gym got promoted back to its own primary bottom-nav icon, and Profile moved under More alongside Planner instead.
 - **Profile decluttered.** Diet & allergies, Install app, Reminders, and Data are now collapsible sections (closed by default) instead of four permanently-expanded cards — "Your details" stays open since it's the one most people actually need right away.
 - **Today decluttered slightly.** Water folded into the bottom of the Activity card instead of being its own separate card — one fewer box on the page.
 

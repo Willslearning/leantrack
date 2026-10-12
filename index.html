@@ -111,9 +111,9 @@
         <span>Planner<small>Plan meals for the week &amp; shopping list</small></span>
         <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
       </button>
-      <button type="button" data-goto="gym">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8.5" y1="12" x2="15.5" y2="12"/><rect x="2" y="9" width="3" height="6" rx="1"/><rect x="19" y="9" width="3" height="6" rx="1"/><rect x="6" y="7" width="2.5" height="10" rx="1"/><rect x="15.5" y="7" width="2.5" height="10" rx="1"/></svg>
-        <span>Gym<small>Log sets, reps &amp; weight</small></span>
+      <button type="button" data-goto="profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+        <span>Profile<small>Your details, diet, reminders &amp; data</small></span>
         <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
       </button>
     </div>
@@ -137,7 +137,6 @@
 
   <!-- GYM -->
   <section id="tab-gym" hidden>
-    <button type="button" class="back-link" data-goto="more">‹ More</button>
     <div class="date-row">
       <button id="gymPrevDay" aria-label="Previous day">‹</button>
       <strong id="gymDateLabel"></strong>
@@ -207,6 +206,7 @@
 
   <!-- PROFILE -->
   <section id="tab-profile" hidden>
+    <button type="button" class="back-link" data-goto="more">‹ More</button>
     <form id="profileForm" class="card grid">
       <h2 class="span">Your details</h2>
       <label>Units
@@ -299,9 +299,9 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l6-7 4 4 7-9"/><path d="M14 6h6v6"/></svg>
     <span>Progress</span>
   </button>
-  <button data-tab="profile">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
-    <span>Profile</span>
+  <button data-tab="gym">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8.5" y1="12" x2="15.5" y2="12"/><rect x="2" y="9" width="3" height="6" rx="1"/><rect x="19" y="9" width="3" height="6" rx="1"/><rect x="6" y="7" width="2.5" height="10" rx="1"/><rect x="15.5" y="7" width="2.5" height="10" rx="1"/></svg>
+    <span>Gym</span>
   </button>
   <button data-tab="more">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>

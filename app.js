@@ -138,9 +138,10 @@ $('#tabs').addEventListener('click', e => {
   const btn = e.target.closest('button[data-tab]'); if (!btn) return;
   showTab(btn.dataset.tab);
 });
-// Planner and Gym live under the "More" tab (no bottom-nav icon of their own) to keep the bar to
-// 5 icons — the More button stays highlighted while you're inside either of them.
-const MORE_GROUP = ['more', 'planner', 'gym'];
+// Planner and Profile live under the "More" tab (no bottom-nav icon of their own) — Gym got
+// promoted to a primary tab since it's used daily, Profile moved to More since it's mostly
+// set-once. The More button stays highlighted while you're inside either of them.
+const MORE_GROUP = ['more', 'planner', 'profile'];
 function showTab(t) {
   $$('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === t || (b.dataset.tab === 'more' && MORE_GROUP.includes(t))));
   $$('main > section').forEach(s => s.hidden = s.id !== 'tab-' + t);
