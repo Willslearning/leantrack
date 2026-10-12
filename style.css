@@ -16,7 +16,22 @@ main{max-width:760px;margin:0 auto;padding:16px 16px calc(80px + env(safe-area-i
 .bottom-nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:none;border:0;padding:8px 2px 7px;color:var(--muted);font-size:.68rem;cursor:pointer}
 .bottom-nav button svg{width:22px;height:22px}
 .bottom-nav button.active{color:var(--accent)}
+.more-menu{padding:6px 0}
+.more-menu button{width:100%;display:flex;align-items:center;gap:12px;background:none;border:0;border-top:1px solid var(--line);padding:14px 16px;text-align:left;color:var(--text);cursor:pointer}
+.more-menu button:first-child{border-top:0}
+.more-menu button svg:first-child{width:22px;height:22px;flex-shrink:0;color:var(--accent)}
+.more-menu span{flex:1;display:flex;flex-direction:column;font-weight:600}
+.more-menu span small{font-weight:400;color:var(--muted)}
+.more-menu .chevron{width:18px;height:18px;flex-shrink:0;color:var(--muted)}
+.back-link{background:none;border:0;color:var(--accent);padding:4px 0 10px;font-size:.9rem}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.settings-section{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:14px}
+.settings-section>summary{list-style:none;cursor:pointer;padding:16px;display:flex;align-items:center;justify-content:space-between}
+.settings-section>summary::-webkit-details-marker{display:none}
+.settings-section>summary::after{content:'›';font-size:1.3rem;color:var(--muted);transform:rotate(90deg);transition:transform .15s}
+.settings-section[open]>summary::after{transform:rotate(-90deg)}
+.settings-section>summary h2{margin:0}
+.settings-section .details-body{padding:0 16px 16px}
 h2{margin:0 0 10px;font-size:1.05rem}
 .muted{color:var(--muted)}.small{font-size:.85rem}
 input,select,button{font:inherit;color:inherit}
@@ -83,7 +98,7 @@ canvas{width:100%;height:auto;max-width:100%}
 .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
 .modal-head h3{margin:0;font-size:1.05rem}
 .modal-head button{background:none;border:0;color:var(--muted);font-size:1.2rem;padding:4px 8px}
-.water-row{gap:12px}
+.water-row{gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
 .water-row button{width:40px;height:40px;border-radius:999px;font-size:1.3rem;line-height:1;padding:0}
 .water-row span#waterCount{font-size:1.3rem;font-weight:700;min-width:1.5em;text-align:center}
 .water-row small{margin-left:-6px}

@@ -138,11 +138,18 @@ $('#tabs').addEventListener('click', e => {
   const btn = e.target.closest('button[data-tab]'); if (!btn) return;
   showTab(btn.dataset.tab);
 });
+// Planner and Gym live under the "More" tab (no bottom-nav icon of their own) to keep the bar to
+// 5 icons — the More button stays highlighted while you're inside either of them.
+const MORE_GROUP = ['more', 'planner', 'gym'];
 function showTab(t) {
-  $$('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+  $$('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === t || (b.dataset.tab === 'more' && MORE_GROUP.includes(t))));
   $$('main > section').forEach(s => s.hidden = s.id !== 'tab-' + t);
   render();
 }
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-goto]'); if (!btn) return;
+  showTab(btn.dataset.goto);
+});
 
 // ---------- calorie goal ----------
 function calcGoal(p) {
@@ -1036,7 +1043,10 @@ $('#installBtn').addEventListener('click', async () => {
 
 // ---------- render ----------
 function render() {
-  const t = $$('#tabs button').find(b => b.classList.contains('active')).dataset.tab;
-  ({ today: renderToday, meals: renderMeals, planner: renderPlanner, gym: renderGym, progress: renderProgress, profile: renderProfile })[t]();
+  // Driven by whichever <section> is actually visible, not the nav button highlight — Planner and
+  // Gym no longer have their own bottom-nav button (they're reached via "More"), so that would
+  // otherwise always resolve to "more" while viewing either of them.
+  const t = $('main > section:not([hidden])').id.replace('tab-', '');
+  ({ today: renderToday, meals: renderMeals, planner: renderPlanner, gym: renderGym, progress: renderProgress, profile: renderProfile, more: () => {} })[t]();
 }
 if (!state.profile) showTab('profile'); else render();

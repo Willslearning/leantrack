@@ -84,11 +84,8 @@
         </form>
       </details>
       <ul id="activityList" class="results"></ul>
-    </div>
-
-    <div class="card">
-      <h2>Water</h2>
       <div class="row water-row">
+        <span class="muted small">Water</span>
         <button type="button" id="waterMinus" aria-label="Remove a cup">−</button>
         <span id="waterCount">0</span><small class="muted">/ <span id="waterGoal">8</span> cups</small>
         <button type="button" id="waterPlus" aria-label="Add a cup">+</button>
@@ -106,8 +103,25 @@
     <div id="mealList" class="meal-grid"></div>
   </section>
 
+  <!-- MORE (hub for less-frequent tabs, keeps the bottom nav to 5 icons) -->
+  <section id="tab-more" hidden>
+    <div class="card more-menu">
+      <button type="button" data-goto="planner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
+        <span>Planner<small>Plan meals for the week &amp; shopping list</small></span>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <button type="button" data-goto="gym">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8.5" y1="12" x2="15.5" y2="12"/><rect x="2" y="9" width="3" height="6" rx="1"/><rect x="19" y="9" width="3" height="6" rx="1"/><rect x="6" y="7" width="2.5" height="10" rx="1"/><rect x="15.5" y="7" width="2.5" height="10" rx="1"/></svg>
+        <span>Gym<small>Log sets, reps &amp; weight</small></span>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </section>
+
   <!-- PLANNER -->
   <section id="tab-planner" hidden>
+    <button type="button" class="back-link" data-goto="more">‹ More</button>
     <div class="date-row">
       <button id="prevWeek" aria-label="Previous week">‹</button>
       <strong id="weekLabel"></strong>
@@ -123,6 +137,7 @@
 
   <!-- GYM -->
   <section id="tab-gym" hidden>
+    <button type="button" class="back-link" data-goto="more">‹ More</button>
     <div class="date-row">
       <button id="gymPrevDay" aria-label="Previous day">‹</button>
       <strong id="gymDateLabel"></strong>
@@ -223,42 +238,50 @@
       <button class="primary span">Save &amp; calculate goal</button>
       <div id="goalResult" class="span result-box"></div>
     </form>
-    <div class="card">
-      <h2>Diet &amp; allergies</h2>
-      <label>Diet type
-        <select id="dietType">
-          <option value="none">No restriction</option>
-          <option value="vegetarian">Vegetarian</option>
-          <option value="vegan">Vegan</option>
-        </select>
-      </label>
-      <p class="muted small diet-label">Avoid:</p>
-      <div class="chips" id="allergenChips"></div>
-      <form id="customAvoidForm" class="row diet-custom-form">
-        <input id="customAvoidIn" placeholder="Other food to avoid (e.g. mushroom)">
-        <button class="primary">Add</button>
-      </form>
-      <div id="customAvoidList" class="chips diet-custom-list"></div>
-      <p class="muted small">Meal ideas and the Planner hide anything that doesn't fit. Your own food search just gets a warning tag — it never stops you from logging something.</p>
-    </div>
-    <div class="card">
-      <h2>Install app</h2>
-      <p class="muted" id="installStatus"></p>
-      <button type="button" id="installBtn" hidden>Install LeanTrack</button>
-    </div>
-    <div class="card">
-      <h2>Reminders</h2>
-      <p class="muted" id="notifStatus"></p>
-      <button type="button" id="enableNotif">Enable notifications</button>
-      <div id="reminderList"></div>
-      <p class="muted small">Reminders fire more reliably once LeanTrack is installed (see above) — a plain browser tab still needs to stay open. For the most reliable option, tap "Add to Calendar" on any reminder below to get a recurring event with its own alert in your phone's Calendar app — that works even with LeanTrack fully closed.</p>
-    </div>
-    <div class="card">
-      <h2>Data</h2>
-      <button id="exportBtn">Export backup</button>
-      <button id="resetBtn" class="danger">Erase all data</button>
-      <p class="muted">Everything is stored only in this browser on this computer.</p>
-    </div>
+    <details class="settings-section">
+      <summary><h2>Diet &amp; allergies</h2></summary>
+      <div class="details-body">
+        <label>Diet type
+          <select id="dietType">
+            <option value="none">No restriction</option>
+            <option value="vegetarian">Vegetarian</option>
+            <option value="vegan">Vegan</option>
+          </select>
+        </label>
+        <p class="muted small diet-label">Avoid:</p>
+        <div class="chips" id="allergenChips"></div>
+        <form id="customAvoidForm" class="row diet-custom-form">
+          <input id="customAvoidIn" placeholder="Other food to avoid (e.g. mushroom)">
+          <button class="primary">Add</button>
+        </form>
+        <div id="customAvoidList" class="chips diet-custom-list"></div>
+        <p class="muted small">Meal ideas and the Planner hide anything that doesn't fit. Your own food search just gets a warning tag — it never stops you from logging something.</p>
+      </div>
+    </details>
+    <details class="settings-section">
+      <summary><h2>Install app</h2></summary>
+      <div class="details-body">
+        <p class="muted" id="installStatus"></p>
+        <button type="button" id="installBtn" hidden>Install LeanTrack</button>
+      </div>
+    </details>
+    <details class="settings-section">
+      <summary><h2>Reminders</h2></summary>
+      <div class="details-body">
+        <p class="muted" id="notifStatus"></p>
+        <button type="button" id="enableNotif">Enable notifications</button>
+        <div id="reminderList"></div>
+        <p class="muted small">Reminders fire more reliably once LeanTrack is installed (see above) — a plain browser tab still needs to stay open. For the most reliable option, tap "Add to Calendar" on any reminder below to get a recurring event with its own alert in your phone's Calendar app — that works even with LeanTrack fully closed.</p>
+      </div>
+    </details>
+    <details class="settings-section">
+      <summary><h2>Data</h2></summary>
+      <div class="details-body">
+        <button id="exportBtn">Export backup</button>
+        <button id="resetBtn" class="danger">Erase all data</button>
+        <p class="muted">Everything is stored only in this browser on this computer.</p>
+      </div>
+    </details>
     <p class="muted small">LeanTrack gives general estimates, not medical advice. Check with a doctor or dietitian before starting a diet, especially if you have a health condition.</p>
   </section>
 </main>
@@ -272,14 +295,6 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2v7a1.5 1.5 0 0 0 3 0V2M8.5 9v13M16.5 2c-1.8 2.5-1.8 6 0 8 .7.8.7 1 .7 2v9"/></svg>
     <span>Meals</span>
   </button>
-  <button data-tab="planner">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
-    <span>Planner</span>
-  </button>
-  <button data-tab="gym">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8.5" y1="12" x2="15.5" y2="12"/><rect x="2" y="9" width="3" height="6" rx="1"/><rect x="19" y="9" width="3" height="6" rx="1"/><rect x="6" y="7" width="2.5" height="10" rx="1"/><rect x="15.5" y="7" width="2.5" height="10" rx="1"/></svg>
-    <span>Gym</span>
-  </button>
   <button data-tab="progress">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l6-7 4 4 7-9"/><path d="M14 6h6v6"/></svg>
     <span>Progress</span>
@@ -287,6 +302,10 @@
   <button data-tab="profile">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
     <span>Profile</span>
+  </button>
+  <button data-tab="more">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+    <span>More</span>
   </button>
 </nav>
 
