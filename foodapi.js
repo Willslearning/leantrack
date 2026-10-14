@@ -9,6 +9,13 @@ const OFF_PRODUCT_URL = 'https://world.openfoodfacts.org/api/v2/product/';
 // straight from Open Food Facts, preferred over our own keyword-guessing when present.
 const OFF_FIELDS = 'code,product_name,generic_name,brands,serving_size,nutriments,allergens_tags,ingredients_analysis_tags';
 
+// Pulls a gram weight out of an Open Food Facts serving_size string ("30 g", "2 cookies (28 g)",
+// "250ml" with no grams given → undefined). Used for the weight-entry mode on the Add row — when
+// we can't find a gram weight, that item just doesn't offer weight mode, only servings.
+function parseGrams(str) {
+  const m = String(str || '').match(/([\d.]+)\s*g\b/i);
+  return m ? parseFloat(m[1]) : undefined;
+}
 // Normalize an Open Food Facts product into the same shape as entries in data.js (FOODS).
 function offToFood(p) {
   const nutr = p?.nutriments || {};
@@ -25,6 +32,7 @@ function offToFood(p) {
     p: round1(nutr['proteins' + suf]),
     c: round1(nutr['carbohydrates' + suf]),
     f: round1(nutr['fat' + suf]),
+    g: perServing ? parseGrams(p.serving_size) : 100, // the 100g-basis fallback is itself a known weight
     source: 'off',
     barcode: p.code,
     allergensTags: p.allergens_tags || [],

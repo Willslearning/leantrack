@@ -61,7 +61,12 @@ button.danger{color:var(--danger);border-color:var(--danger)}
 .stats{display:flex;gap:18px;flex-wrap:wrap;flex:1;justify-content:space-around}
 .stats div{text-align:center}.stats b{font-size:1.1rem}
 .results{list-style:none;margin:8px 0 0;padding:0}
-.results li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line)}
+.results li{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line)}
+.amount-row{flex-basis:100%;display:flex;gap:8px;align-items:center;margin-top:2px}
+.amount-row[hidden]{display:none}
+.amount-row .amt-input{width:70px;flex:0 0 auto}
+.amount-row .amt-unit{width:auto;flex:0 0 auto}
+.amount-row .amt-confirm{margin-left:auto}
 .results li small{color:var(--muted);display:block}
 .results li>div:first-child{flex:1 1 auto;min-width:0}
 .li-actions{display:flex;align-items:center;gap:2px;flex-shrink:0}

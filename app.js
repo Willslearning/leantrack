@@ -256,6 +256,12 @@ let searchTimer = null, searchCtrl = null;
 // Open Food Facts, barcode) collapses to one entry. foodPool remembers the full object behind
 // whatever key is currently rendered, so the star button can save it without re-fetching anything.
 const foodPool = new Map();
+// Which food's amount-row is currently expanded (and what's been typed into it so far), kept
+// outside the render functions so it survives a full list re-render — e.g. an Open Food Facts
+// search landing in the background right after you tap Add shouldn't silently collapse what
+// you were about to enter. Shared across #foodResults and #barcodeResult since only one row is
+// ever realistically "being edited" at a time.
+let openAmount = null; // { key, amount, unit } | null
 const isFavorite = f => state.favorites.some(x => lc(x.n) === lc(f.n));
 function toggleFavorite(key) {
   const food = foodPool.get(key);
@@ -263,16 +269,43 @@ function toggleFavorite(key) {
   else if (food) state.favorites = [...state.favorites, food];
   save();
 }
-function foodLi(f, attr) {
+// Scales a food's nutrition by a servings count or (when the food has a known gram weight) by
+// weight, into ONE combined log entry — so e.g. 4 rice cakes becomes a single "Rice cakes ×4"
+// entry instead of four identical taps.
+function scaleFood(base, amount, unit) {
+  if (!amount || amount <= 0) return null;
+  const factor = (unit === 'g' && base.g) ? amount / base.g : amount;
+  const r2 = v => Math.round((v || 0) * factor * 100) / 100;
+  let label = base.n;
+  if (unit === 'g') label = `${base.n} (${amount}g)`;
+  else if (amount !== 1) label = `${base.n} ×${amount}`;
+  return {
+    n: label, s: '', // amount's already encoded in the name above; skip re-appending the base serving
+    cal: Math.round((base.cal || 0) * factor),
+    p: r2(base.p), c: r2(base.c), f: r2(base.f),
+    source: base.source, barcode: base.barcode, allergensTags: base.allergensTags, analysisTags: base.analysisTags,
+  };
+}
+function foodLi(f) {
   const key = lc(f.n);
   foodPool.set(key, f);
   const tag = f.source === 'off' ? '<span class="src-off">Open Food Facts</span>' : '';
   const warn = dietWarnings(f).map(w => `<span class="diet-warn">${esc(w)}</span>`).join('');
   const fav = isFavorite(f);
-  return `<li><div>${esc(f.n)}${tag}${warn}<small>${esc(f.s || '')} · ${f.cal} cal · P ${f.p || 0} C ${f.c || 0} F ${f.f || 0}</small></div>
+  const open = openAmount && openAmount.key === key;
+  const amt = open ? openAmount.amount : 1;
+  const unit = open ? openAmount.unit : 'serving';
+  const unitOptions = `<option value="serving" ${unit === 'serving' ? 'selected' : ''}>servings</option>` +
+    (f.g ? `<option value="g" ${unit === 'g' ? 'selected' : ''}>grams</option>` : '');
+  return `<li data-foodkey="${esc(key)}"><div>${esc(f.n)}${tag}${warn}<small>${esc(f.s || '')} · ${f.cal} cal · P ${f.p || 0} C ${f.c || 0} F ${f.f || 0}</small></div>
     <div class="li-actions">
       <button class="fav-btn ${fav ? 'on' : ''}" data-favtoggle="${esc(key)}" aria-label="${fav ? 'Remove from favorites' : 'Add to favorites'}">${fav ? '★' : '☆'}</button>
-      <button ${attr}>Add</button>
+      <button type="button" class="add-toggle">Add</button>
+    </div>
+    <div class="amount-row" ${open ? '' : 'hidden'}>
+      <input type="number" class="amt-input" min="0.1" step="0.5" value="${amt}" inputmode="decimal" aria-label="Amount">
+      <select class="amt-unit" aria-label="Unit">${unitOptions}</select>
+      <button type="button" class="primary amt-confirm">Add</button>
     </div></li>`;
 }
 // Draws the list from current state only — never schedules a search itself,
@@ -284,17 +317,17 @@ function renderResultsList() {
     // Nothing typed yet: show Favorites as a one-tap shortcut instead of an empty list, so a
     // saved food (e.g. "that Red Bull") never needs searching or scanning again.
     $('#foodResults').innerHTML = state.favorites.length
-      ? `<li class="muted">Favorites</li>` + state.favorites.map(f => foodLi(f, `data-add-fav="${esc(lc(f.n))}"`)).join('')
+      ? `<li class="muted">Favorites</li>` + state.favorites.map(f => foodLi(f)).join('')
       : '<li class="muted">Search for a food, or star a result to save it here for next time.</li>';
     return;
   }
   const all = [...state.custom, ...FOODS];
   const local = all.filter(f => f.n.toLowerCase().includes(ql)).slice(0, 8);
-  let html = local.map(f => foodLi(f, `data-add="${all.indexOf(f)}"`)).join('');
+  let html = local.map(f => foodLi(f)).join('');
   if (ql.length >= 2) {
     if (onlineStatus === 'loading') html += '<li class="muted">Searching Open Food Facts…</li>';
     else if (onlineStatus === 'error') html += '<li class="muted">Couldn’t reach Open Food Facts (offline?). Showing built-in foods only.</li>';
-    else if (onlineStatus === 'done') html += onlineResults.map((f, i) => foodLi(f, `data-online="${i}"`)).join('');
+    else if (onlineStatus === 'done') html += onlineResults.map(f => foodLi(f)).join('');
   }
   $('#foodResults').innerHTML = html || '<li class="muted">No match. Try the custom food form below.</li>';
 }
@@ -319,19 +352,38 @@ function scheduleOnlineSearch(q) {
     renderResultsList();
   }, 400);
 }
+// Shared by #foodResults and #barcodeResult: expands (or collapses) a row's amount picker,
+// recorded in `openAmount` so it survives a re-render — see the comment on that variable.
+function toggleAmountRow(li) {
+  const key = li.dataset.foodkey;
+  const opening = !(openAmount && openAmount.key === key);
+  $$('.amount-row').forEach(r => r.hidden = true);
+  openAmount = opening ? { key, amount: 1, unit: 'serving' } : null;
+  if (opening) li.querySelector('.amount-row').hidden = false;
+}
+document.addEventListener('input', e => {
+  if (openAmount && e.target.classList.contains('amt-input')) openAmount.amount = +e.target.value;
+});
+document.addEventListener('change', e => {
+  if (openAmount && e.target.classList.contains('amt-unit')) openAmount.unit = e.target.value;
+});
 $('#foodSearch').addEventListener('input', () => { renderResultsList(); scheduleOnlineSearch($('#foodSearch').value); });
 $('#foodResults').addEventListener('click', e => {
-  const i = e.target.dataset.add, oi = e.target.dataset.online, fk = e.target.dataset.addFav, star = e.target.dataset.favtoggle;
+  const star = e.target.dataset.favtoggle;
   if (star !== undefined) { toggleFavorite(star); renderResultsList(); return; }
-  let food = null;
-  if (i !== undefined) food = [...state.custom, ...FOODS][+i];
-  else if (oi !== undefined) food = onlineResults[+oi];
-  else if (fk !== undefined) food = foodPool.get(fk);
-  if (!food) return;
-  addEntry(food);
+  const li = e.target.closest('li[data-foodkey]'); if (!li) return;
+  if (e.target.classList.contains('add-toggle')) { toggleAmountRow(li); return; }
+  if (!e.target.classList.contains('amt-confirm')) return;
+  const base = foodPool.get(li.dataset.foodkey); if (!base) return;
+  const row = e.target.closest('.amount-row');
+  const scaled = scaleFood(base, +row.querySelector('.amt-input').value, row.querySelector('.amt-unit').value);
+  if (!scaled) { showToast('Enter a valid amount'); return; }
+  openAmount = null;
+  addEntry(scaled);
   // Clear the just-used search so the result isn't still sitting on screen looking unclicked —
-  // an empty search naturally falls back to the Favorites shortcut list.
-  if (i !== undefined || oi !== undefined) { $('#foodSearch').value = ''; onlineResults = []; onlineStatus = ''; }
+  // an empty search naturally falls back to the Favorites shortcut list. Harmless no-op when the
+  // add came from Favorites, since the search box is already empty there.
+  if ($('#foodSearch').value.trim()) { $('#foodSearch').value = ''; onlineResults = []; onlineStatus = ''; }
   renderResultsList();
 });
 
@@ -342,7 +394,7 @@ $('#foodResults').addEventListener('click', e => {
 // "Can't scan?" link lets you switch to manual entry any time, and Cancel/✕/Escape closes it.
 let barcodeResult = null;
 function renderBarcodeResult(msg) {
-  $('#barcodeResult').innerHTML = barcodeResult ? foodLi(barcodeResult, 'data-barcode-add') : (msg ? `<li class="muted">${esc(msg)}</li>` : '');
+  $('#barcodeResult').innerHTML = barcodeResult ? foodLi(barcodeResult) : (msg ? `<li class="muted">${esc(msg)}</li>` : '');
 }
 async function lookupCode(code) {
   barcodeResult = null; renderBarcodeResult('Looking up…');
@@ -369,8 +421,14 @@ $('#barcodeManualForm').addEventListener('submit', e => {
 $('#barcodeResult').addEventListener('click', e => {
   const star = e.target.dataset.favtoggle;
   if (star !== undefined) { toggleFavorite(star); renderBarcodeResult(''); return; }
-  if (e.target.dataset.barcodeAdd === undefined) return;
-  addEntry(barcodeResult);
+  const li = e.target.closest('li[data-foodkey]'); if (!li) return;
+  if (e.target.classList.contains('add-toggle')) { toggleAmountRow(li); return; }
+  if (!e.target.classList.contains('amt-confirm')) return;
+  const row = e.target.closest('.amount-row');
+  const scaled = scaleFood(barcodeResult, +row.querySelector('.amt-input').value, row.querySelector('.amt-unit').value);
+  if (!scaled) { showToast('Enter a valid amount'); return; }
+  openAmount = null;
+  addEntry(scaled);
   barcodeResult = null;
   closeBarcodeModal(); // found it and logged it — nothing more to do here
 });
@@ -399,7 +457,7 @@ function loadZXing() {
   return zxingLoadPromise;
 }
 function openBarcodeModal() {
-  barcodeResult = null; renderBarcodeResult('');
+  barcodeResult = null; openAmount = null; renderBarcodeResult('');
   $('#barcodeManualIn').value = '';
   $('#barcodeManualForm').hidden = true;
   $('#scanWrap').hidden = false;
