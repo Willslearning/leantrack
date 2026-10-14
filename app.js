@@ -408,6 +408,7 @@ function openBarcodeModal() {
 }
 function closeBarcodeModal() {
   stopScan();
+  barcodeResult = null;
   $('#barcodeModal').hidden = true;
 }
 function showManualEntry(msg) {
@@ -421,14 +422,22 @@ $('#barcodeModalClose').addEventListener('click', closeBarcodeModal);
 $('#manualEntryLink').addEventListener('click', () => showManualEntry(''));
 $('#barcodeModal').addEventListener('click', e => { if (e.target.id === 'barcodeModal') closeBarcodeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#barcodeModal').hidden) closeBarcodeModal(); });
+// Bumped every time scanning starts/stops, so a scan session started before a reopen (or before
+// closing the modal) can tell, once its async setup finally resolves, that it's no longer current
+// — and release the camera immediately instead of silently running in the background and
+// overwriting a later scan's result with stale data.
+let scanSession = 0;
 async function startScan() {
+  const mySession = ++scanSession;
   renderBarcodeResult('Loading scanner…');
   try {
     await loadZXing();
   } catch {
+    if (mySession !== scanSession) return;
     showManualEntry('Couldn’t load the scanner (offline?). Type the barcode instead.');
     return;
   }
+  if (mySession !== scanSession) return; // modal closed/reopened while the library was loading
   renderBarcodeResult('');
   // TRY_HARDER spends more effort per frame decoding — slower, but noticeably better at reading
   // barcodes that wrap around curved cans/bottles, which is the single most common real-world
@@ -443,19 +452,24 @@ async function startScan() {
   // aren't supported on a device are just ignored by the browser, not an error.
   const constraints = { video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 }, advanced: [{ focusMode: 'continuous' }] } };
   try {
-    zxingControls = await reader.decodeFromConstraints(constraints, $('#scanVideo'),
+    const controls = await reader.decodeFromConstraints(constraints, $('#scanVideo'),
       (result) => {
+        if (mySession !== scanSession) return; // a closed/superseded session — ignore its callback
         if (!result) return; // fires continuously with a "not found" error while no barcode is in view
         const code = result.getText();
         stopScan();
         lookupCode(code);
       }
     );
+    if (mySession !== scanSession) { controls.stop(); return; } // closed while starting up — release right away
+    zxingControls = controls;
   } catch {
+    if (mySession !== scanSession) return;
     showManualEntry('Camera access was denied or unavailable. Type the barcode instead.');
   }
 }
 function stopScan() {
+  scanSession++; // invalidates any startScan() still mid-flight
   zxingControls?.stop(); zxingControls = null;
   // Belt-and-suspenders: some ZXing versions' controls.stop() doesn't reliably release the camera
   // hardware on its own (the recording indicator can stay on) — stop the MediaStream tracks

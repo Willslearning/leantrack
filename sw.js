@@ -1,6 +1,6 @@
 // Service worker for offline support + installability (Phase 5). Bump CACHE when the asset
 // list below changes meaningfully, so returning users pick up the new files instead of stale ones.
-const CACHE = 'leantrack-v20'; // bumped: Home moved to the center of the bottom nav
+const CACHE = 'leantrack-v21'; // bumped: fix scanner race condition (stale result stuck after closing/reopening)
 const ASSETS = [
   './',
   './index.html',
