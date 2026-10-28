@@ -130,6 +130,9 @@ Self-assessed recommendations after Phase 9, agreed by the user. Three picked to
 
 **Notes:** Import reads a `.json` file, confirms (destructive — replaces all current data) before overwriting `localStorage` and reloading. Protein goal is a new Profile field, suggested at a sensible 0.8g/lb bodyweight default but editable, shown as "Xg / goal" next to the existing protein total on Home. Gym now looks back across all previously-logged days (not just "yesterday") for the most recent session of whichever exercise you pick, and shows its sets as a reference line before you log today's.
 
+## Visual polish pass ✅ Done
+CSS-only, no markup/structure changes — purely how things look. Header and primary buttons got a subtle brand-color gradient instead of a flat fill; cards, the modal, and the bottom nav got soft drop shadows for depth; the calorie ring and stat numbers got bolder weight + a touch more size; chips, the favorite star, meal cards, and the toast got small transitions (hover lift on meal cards, scale feedback on taps, a fade/slide-in on the toast and amount modal); form inputs get a visible focus ring. Nothing structural changed, so this carries no functional risk — verified via screenshot in both light and dark mode with no console errors.
+
 ## Parked ideas (not being built right now)
 - **Fitbit / Google Fit / real step-count syncing.** Skipped for now per user request — these need a developer account registered with Fitbit or Google (this app has no backend of its own to hold shared credentials), which is a bigger commitment than the app's current "no accounts" design. Revisit if wanted later; a simpler middle ground (manual daily step entry, no sync) is always available as a smaller alternative.
 - **Editing a logged entry's amount.** Now that quantity/weight entry exists, fixing a mis-entered amount means delete-and-redo rather than adjusting in place.
