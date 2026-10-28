@@ -122,11 +122,25 @@ New **Gym** tab (bottom nav, 6th icon) shares the same day cursor as Today/Activ
 
 ---
 
+## Phase 10 — Import backup, protein goal, Gym "last time" ✅ Done
+Self-assessed recommendations after Phase 9, agreed by the user. Three picked to build now:
+- **Import backup.** "Export backup" existed with no way back in — if browser data got cleared or you switched devices, that JSON file was a dead end. A correctness gap, not really a feature request.
+- **Protein goal.** Only calories had a goal; protein/carbs/fat were just totals with nothing to hit. Matters more now that Gym tracking exists — lifters generally care about a protein target as much as calories.
+- **Gym "last time" reference.** Picking an exercise showed a blank set-entry form with no memory of your last session — the single most useful thing for progressive overload (am I improving?) was missing.
+
+**Notes:** Import reads a `.json` file, confirms (destructive — replaces all current data) before overwriting `localStorage` and reloading. Protein goal is a new Profile field, suggested at a sensible 0.8g/lb bodyweight default but editable, shown as "Xg / goal" next to the existing protein total on Home. Gym now looks back across all previously-logged days (not just "yesterday") for the most recent session of whichever exercise you pick, and shows its sets as a reference line before you log today's.
+
 ## Parked ideas (not being built right now)
 - **Fitbit / Google Fit / real step-count syncing.** Skipped for now per user request — these need a developer account registered with Fitbit or Google (this app has no backend of its own to hold shared credentials), which is a bigger commitment than the app's current "no accounts" design. Revisit if wanted later; a simpler middle ground (manual daily step entry, no sync) is always available as a smaller alternative.
+- **Editing a logged entry's amount.** Now that quantity/weight entry exists, fixing a mis-entered amount means delete-and-redo rather than adjusting in place.
+- **Custom foods/exercises can't be deleted or edited** once added — a typo sits in search results forever.
+- **Macros trend chart on Progress** (protein especially) — would pair naturally with the new protein goal.
+- **Meal ideas search by name** — tag chips alone get harder to browse as the list (39+ built-ins plus saved variants) grows.
+- **Water goal isn't editable** (hardcoded at 8 cups).
+- **Planner "copy this week to next week"** for people who eat similarly often.
 
 ---
 
-**Order:** 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9, each phase shippable and testable before moving to the next.
+**Order:** 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10, each phase shippable and testable before moving to the next.
 
-**Status:** Phases 1–9 done. No phases currently planned — see Parked ideas below for what's next if wanted.
+**Status:** Phases 1–10 done. No phases currently planned — see Parked ideas below for what's next if wanted.

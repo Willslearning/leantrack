@@ -12,7 +12,7 @@ let planWeekStart = startOfWeek(todayStr());
 
 function load() {
   const blank = {
-    profile: null, goal: 2000, log: {}, weights: [], custom: [], offCache: {}, barcodeCache: {}, activities: {}, water: {}, waterGoal: 8,
+    profile: null, goal: 2000, proteinGoal: null, log: {}, weights: [], custom: [], offCache: {}, barcodeCache: {}, activities: {}, water: {}, waterGoal: 8,
     plan: {}, shoppingChecked: {},
     diet: { type: 'none', avoid: [] }, // avoid: mix of ALLERGENS keys and free-text custom words
     favorites: [], // saved foods (any source) for one-tap re-adding without searching/scanning again
@@ -180,7 +180,7 @@ function renderToday() {
   $('#exerciseCal').textContent = (exCal ? '+' : '') + round(exCal);
   $('#remaining').textContent = Math.abs(round(left));
   $('#remainingLabel').textContent = left >= 0 ? 'left' : 'over';
-  $('#pTot').textContent = round(t.p) + 'g';
+  $('#pTot').textContent = round(t.p) + 'g' + (state.proteinGoal ? ` / ${state.proteinGoal}g` : '');
   $('#cTot').textContent = round(t.c) + 'g';
   $('#fTot').textContent = round(t.f) + 'g';
   const ring = $('#ringFg');
@@ -760,11 +760,26 @@ function renderGym() {
   renderSetEntry();
   renderGymLog();
 }
+// Looks back across every previously-logged day (not just "yesterday") for the most recent
+// session of this exercise — the single most useful thing for progressive overload: am I doing
+// better than last time?
+function lastGymSession(exerciseName, beforeDate) {
+  const dates = Object.keys(state.gym).filter(d => d < beforeDate).sort().reverse();
+  for (const d of dates) {
+    const block = (state.gym[d] || []).find(b => b.exercise === exerciseName);
+    if (block && block.sets.length) return { date: d, ...block };
+  }
+  return null;
+}
 function renderSetEntry() {
   $('#setEntryCard').hidden = !gymDraft;
   if (!gymDraft) return;
   $('#setEntryTitle').textContent = gymDraft.exercise;
   $('#setWeightUnit').textContent = `(${wUnit()})`;
+  const last = lastGymSession(gymDraft.exercise, viewDate);
+  $('#lastTimeNote').textContent = last
+    ? `Last time (${last.date}): ${last.sets.map(s => `${s.reps}${s.weight ? ` @ ${s.weight}${last.unit}` : ''}`).join(', ')}`
+    : '';
   $('#currentSetsList').innerHTML = gymDraft.sets.map((s, i) =>
     `<li><div>Set ${i + 1}<small>${s.reps} reps${s.weight ? ` · ${s.weight} ${gymDraft.unit}` : ''}</small></div>
       <button class="del" data-setdel="${i}" aria-label="Remove">✕</button></li>`).join('');
@@ -903,6 +918,15 @@ function barChart(c, pts, goal) {
 
 // ---------- PROFILE ----------
 const pf = $('#profileForm');
+// 0.8g protein per lb bodyweight is a commonly-cited reasonable default for general fitness/weight
+// loss — on the higher end for sedentary folks, on the lower end for serious lifters, but a fine
+// starting suggestion either way; always editable.
+const suggestedProteinG = weightKg => Math.round(weightKg * LB * 0.8);
+function updateProteinSuggestion() {
+  const w = +pf.weight.value; if (!w) { $('#proteinSuggestion').textContent = ''; return; }
+  const kg = pf.units.value === 'imperial' ? w / LB : w;
+  $('#proteinSuggestion').textContent = `(suggested ~${suggestedProteinG(kg)}g)`;
+}
 function renderProfile() {
   const p = state.profile, u = p?.units || pf.units.value;
   $$('.unit-w').forEach(s => s.textContent = `(${u === 'imperial' ? 'lb' : 'kg'})`);
@@ -913,12 +937,15 @@ function renderProfile() {
     pf.pace.value = p.paceLb;
     pf.height.value = u === 'imperial' ? round(p.heightCm * IN, 1) : p.heightCm;
     pf.weight.value = kgToDisp(p.weightKg); pf.goal.value = kgToDisp(p.goalKg);
+    pf.protein.value = state.proteinGoal || '';
     showGoal(calcGoal(p));
   }
+  updateProteinSuggestion();
   renderReminders();
   renderInstall();
   renderDiet();
 }
+pf.weight.addEventListener('input', updateProteinSuggestion);
 pf.units.addEventListener('change', () => {
   const to = pf.units.value, from = to === 'imperial' ? 'metric' : 'imperial';
   const conv = (el, k) => { if (el.value) el.value = round(+el.value * k, 1); };
@@ -926,6 +953,7 @@ pf.units.addEventListener('change', () => {
   conv(pf.weight, w); conv(pf.goal, w); conv(pf.height, h);
   $$('.unit-w').forEach(s => s.textContent = `(${to === 'imperial' ? 'lb' : 'kg'})`);
   $$('.unit-h').forEach(s => s.textContent = `(${to === 'imperial' ? 'in' : 'cm'})`);
+  updateProteinSuggestion();
 });
 pf.addEventListener('submit', e => {
   e.preventDefault();
@@ -938,6 +966,8 @@ pf.addEventListener('submit', e => {
   };
   const r = calcGoal(p);
   state.profile = p; state.goal = r.goal;
+  state.proteinGoal = pf.protein.value ? +pf.protein.value : suggestedProteinG(p.weightKg);
+  pf.protein.value = state.proteinGoal; // reflect the applied default back if left blank
   if (!state.weights.length) state.weights.push({ date: todayStr(), kg: p.weightKg });
   save(); showGoal(r); render();
 });
@@ -985,6 +1015,27 @@ $('#exportBtn').onclick = () => {
 $('#resetBtn').onclick = () => {
   if (confirm('Erase all LeanTrack data in this browser? This cannot be undone.')) { localStorage.removeItem(KEY); location.reload(); }
 };
+$('#importBtn').onclick = () => $('#importFile').click();
+$('#importFile').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  e.target.value = ''; // always reset so picking the same file again still fires 'change'
+  if (!file) return;
+  let data;
+  try {
+    data = JSON.parse(await file.text());
+    // Loose sanity check — a real backup is a plain object with at least one key we recognize,
+    // not just any JSON file someone happened to pick.
+    if (!data || typeof data !== 'object' || Array.isArray(data) || !('log' in data || 'profile' in data)) {
+      throw new Error('not a LeanTrack backup');
+    }
+  } catch {
+    alert('Couldn’t read that file — make sure it’s a LeanTrack backup .json (from Export backup).');
+    return;
+  }
+  if (!confirm('Import this backup? This replaces ALL current data in this browser — export a backup of what you have now first if you want to keep it.')) return;
+  localStorage.setItem(KEY, JSON.stringify(data));
+  location.reload();
+});
 
 // ---------- reminders ----------
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];

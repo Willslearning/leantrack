@@ -167,6 +167,7 @@
 
     <div class="card" id="setEntryCard" hidden>
       <h2 id="setEntryTitle"></h2>
+      <p class="muted small" id="lastTimeNote"></p>
       <div class="row">
         <input id="setReps" type="number" min="1" placeholder="Reps">
         <input id="setWeight" type="number" min="0" step="0.5" placeholder="Weight">
@@ -241,6 +242,9 @@
           <option value="2">Aggressive – 2 lb/week</option>
         </select>
       </label>
+      <label>Protein goal (g/day) <span class="muted small" id="proteinSuggestion"></span>
+        <input name="protein" type="number" min="0" step="1" placeholder="e.g. 130">
+      </label>
       <button class="primary span">Save &amp; calculate goal</button>
       <div id="goalResult" class="span result-box"></div>
     </form>
@@ -284,6 +288,8 @@
       <summary><h2>Data</h2></summary>
       <div class="details-body">
         <button id="exportBtn">Export backup</button>
+        <button id="importBtn">Import backup</button>
+        <input type="file" id="importFile" accept="application/json" hidden>
         <button id="resetBtn" class="danger">Erase all data</button>
         <p class="muted">Everything is stored only in this browser on this computer.</p>
       </div>
